@@ -48,7 +48,7 @@ claude-tools/
 
 ```bash
 cd /path/to/project
-claude-worktree init        # worktree 作成 (project-a, project-b, project-c)
+claude-worktree init        # worktree 作成 (.worktrees/wt-a, wt-b, wt-c)
 claude-worktree register    # zuse に登録
 ```
 

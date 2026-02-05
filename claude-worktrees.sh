@@ -42,18 +42,29 @@ claude-worktree() {
 
     if [ -n "$project_root" ]; then
         project_name="$(basename "$project_root")"
-        work_base="$(cd "$project_root/.." && pwd)"
+        work_base="$project_root/.worktrees"
     fi
 
     case "$subcmd" in
         init)
             echo "=== Worktree 作成: $project_name ==="
             echo "プロジェクト: $project_root"
+            echo "作成先: $work_base/"
             echo ""
+
+            # .worktrees ディレクトリを作成
+            mkdir -p "$work_base"
+
+            # .gitignore に .worktrees/ を追加
+            local gitignore="$project_root/.gitignore"
+            if [ ! -f "$gitignore" ] || ! grep -qx '\.worktrees/' "$gitignore" 2>/dev/null; then
+                echo '.worktrees/' >> "$gitignore"
+                echo "[.gitignore] .worktrees/ を追加しました"
+            fi
 
             local suffixes=("a" "b" "c")
             for s in "${suffixes[@]}"; do
-                local dir="${project_name}-${s}"
+                local dir="wt-${s}"
                 local branch="${project_name}/wt-${s}"
                 local wt_path="$work_base/$dir"
 
@@ -85,9 +96,9 @@ claude-worktree() {
             local config="$CLAUDE_WT_CONFIG_DIR/$project_name.sh"
             cat > "$config" <<EOF
 export CLAUDE_WT_ROOT="$project_root"
-export CLAUDE_WT_A="$work_base/${project_name}-a"
-export CLAUDE_WT_B="$work_base/${project_name}-b"
-export CLAUDE_WT_C="$work_base/${project_name}-c"
+export CLAUDE_WT_A="$work_base/wt-a"
+export CLAUDE_WT_B="$work_base/wt-b"
+export CLAUDE_WT_C="$work_base/wt-c"
 EOF
             echo "$project_name" > "$CLAUDE_WT_CONFIG_DIR/.last"
             echo "'$project_name' を登録しました"
@@ -98,7 +109,7 @@ EOF
             echo "=== Worktree 削除: $project_name ==="
             local suffixes=("a" "b" "c")
             for s in "${suffixes[@]}"; do
-                local dir="${project_name}-${s}"
+                local dir="wt-${s}"
                 local wt_path="$work_base/$dir"
                 if [ -d "$wt_path" ]; then
                     echo "[削除中] $dir"
@@ -116,7 +127,7 @@ EOF
             echo ""
             local suffixes=("a" "b" "c")
             for s in "${suffixes[@]}"; do
-                local dir="${project_name}-${s}"
+                local dir="wt-${s}"
                 local wt_path="$work_base/$dir"
                 if [ -d "$wt_path" ]; then
                     local br
@@ -227,10 +238,13 @@ zinfo() {
     fi
     echo "=== $CLAUDE_WT_ACTIVE ==="
     echo "  z0 : $CLAUDE_WT_ROOT"
-    local dirs=("$CLAUDE_WT_A" "$CLAUDE_WT_B" "$CLAUDE_WT_C")
-    local keys=("za" "zb" "zc")
-    for i in 0 1 2; do
-        local d="${dirs[$i]}" k="${keys[$i]}"
+    local d k
+    for k in za zb zc; do
+        case "$k" in
+            za) d="$CLAUDE_WT_A" ;;
+            zb) d="$CLAUDE_WT_B" ;;
+            zc) d="$CLAUDE_WT_C" ;;
+        esac
         if [ -d "$d" ]; then
             echo "  $k : $d ($(git -C "$d" branch --show-current 2>/dev/null || echo 'detached'))"
         else
@@ -238,6 +252,58 @@ zinfo() {
         fi
     done
 }
+
+# --- 補完 ---
+_claude_worktree_completions() {
+    local subcmds="init register remove status help"
+    if [ -n "$ZSH_VERSION" ]; then
+        _arguments '1:subcommand:(init register remove status help)'
+    elif [ -n "$BASH_VERSION" ]; then
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+        COMPREPLY=($(compgen -W "$subcmds" -- "$cur"))
+    fi
+}
+
+_zuse_completions() {
+    local projects=()
+    for f in "$CLAUDE_WT_CONFIG_DIR"/*.sh; do
+        [ -f "$f" ] || continue
+        projects+=("$(basename "$f" .sh)")
+    done
+    if [ -n "$ZSH_VERSION" ]; then
+        _arguments "1:project:(${projects[*]})"
+    elif [ -n "$BASH_VERSION" ]; then
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+        COMPREPLY=($(compgen -W "${projects[*]}" -- "$cur"))
+    fi
+}
+
+_zswitch_completions() {
+    if [ -n "$ZSH_VERSION" ]; then
+        case "$((CURRENT - 1))" in
+            1) _arguments '1:worktree:(a b c)' ;;
+            2) local branches; branches=($(git -C "$CLAUDE_WT_ROOT" branch --format='%(refname:short)' 2>/dev/null))
+               _arguments "2:branch:(${branches[*]})" ;;
+        esac
+    elif [ -n "$BASH_VERSION" ]; then
+        local cur="${COMP_WORDS[COMP_CWORD]}"
+        case "$COMP_CWORD" in
+            1) COMPREPLY=($(compgen -W "a b c" -- "$cur")) ;;
+            2) local branches; branches=$(git -C "$CLAUDE_WT_ROOT" branch --format='%(refname:short)' 2>/dev/null)
+               COMPREPLY=($(compgen -W "$branches" -- "$cur")) ;;
+        esac
+    fi
+}
+
+if [ -n "$ZSH_VERSION" ]; then
+    compdef _claude_worktree_completions claude-worktree
+    compdef _zuse_completions zuse
+    compdef _zswitch_completions zswitch
+elif [ -n "$BASH_VERSION" ]; then
+    complete -F _claude_worktree_completions claude-worktree
+    complete -F _zuse_completions zuse
+    complete -F _zswitch_completions zswitch
+fi
 
 # --- 起動時: 最後のプロジェクトを復元 ---
 if [ -f "$CLAUDE_WT_CONFIG_DIR/.last" ]; then
