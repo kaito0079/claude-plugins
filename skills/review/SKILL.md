@@ -1,149 +1,149 @@
 ---
 name: review
-description: 厳格なシニアエンジニアとして敵対的コードレビューを実施します。セキュリティ、パフォーマンス、テスト、設計の観点から問題を指摘し、全ての問題が解決されるまで承認しません。
+description: Conducts an adversarial code review as a strict senior engineer. Identifies issues across security, performance, testing, and design. Does not approve until all issues are resolved.
 ---
 
-# 敵対的コードレビュー（Adversarial Review）
+# Adversarial Code Review
 
-厳格なシニアエンジニアとしてコードを徹底的にレビューし、品質を保証
+Review code thoroughly as a strict senior engineer to ensure quality.
 
-## このスキルを使用するタイミング
+## When to Use This Skill
 
-- PR 作成前の最終チェック
-- ステージされた変更のレビュー
-- 特定ファイルの品質チェック
-- セキュリティレビュー
+- Final check before creating a PR
+- Reviewing staged changes
+- Quality check on specific files
+- Security review
 
 ## Instructions
 
-**重要: このレビューでは「承認」のハードルを意図的に高く設定しています。**
-指摘がゼロになるまで改善を求め続けてください。
+**IMPORTANT: This review intentionally sets a high bar for approval.**
+Continue requesting improvements until there are zero findings.
 
-### 0. レビュー対象の特定
+### 0. Identify Review Target
 
-ユーザーが対象を指定しない場合、ステージされた変更をレビュー：
+If the user does not specify a target, review staged changes:
 
 ```bash
 git diff --cached --name-only
 git diff --cached
 ```
 
-ステージされた変更がない場合：
+If there are no staged changes:
 
 ```bash
 git diff --name-only
 git diff
 ```
 
-それもない場合は、最新コミットの変更をレビュー：
+If there are no changes at all, review the latest commit:
 
 ```bash
 git diff HEAD~1 --name-only
 git diff HEAD~1
 ```
 
-### 1. パス1: セキュリティレビュー
+### 1. Pass 1: Security Review
 
-以下の観点で厳密にチェック：
+Check strictly for the following:
 
-- **認証・認可の不備**: トークンの検証漏れ、Policy の未適用
-- **インジェクション攻撃**: SQL インジェクション、XSS、コマンドインジェクション
-- **データ漏洩**: ログへの機密情報出力、レスポンスへの不要データ含有
-- **CSRF 対策**: 状態変更 API の CSRF トークン検証
-- **ファイルアップロード**: MIME タイプ検証、パストラバーサル
-- **認証情報のハードコード**: .env 以外での秘密値の使用
-- **マスアサインメント**: ORM の適切な設定
-- **権限エスカレーション**: テナント間のデータアクセス制御
+- **Authentication/Authorization flaws**: Missing token validation, unapplied policies
+- **Injection attacks**: SQL injection, XSS, command injection
+- **Data leakage**: Sensitive data in logs, unnecessary data in responses
+- **CSRF protection**: CSRF token validation on state-changing APIs
+- **File uploads**: MIME type validation, path traversal
+- **Hardcoded credentials**: Secret values used outside of .env
+- **Mass assignment**: Proper ORM configuration
+- **Privilege escalation**: Cross-tenant data access controls
 
-### 2. パス2: パフォーマンスレビュー
+### 2. Pass 2: Performance Review
 
-以下の観点でチェック：
+Check for the following:
 
-- **N+1 クエリ**: ORM リレーションの Eager Loading 漏れ
-- **不要なクエリ**: ループ内の DB 呼び出し
-- **インデックス**: 検索条件に対する適切なインデックス
-- **メモリ使用量**: 大量データのメモリ内展開
-- **キャッシュ**: 頻繁にアクセスされるデータのキャッシュ戦略
-- **フロントエンド**: 不要な再レンダリング、バンドルサイズへの影響
-- **API 呼び出し**: 過剰な API 呼び出し、レース条件
+- **N+1 queries**: Missing eager loading on ORM relations
+- **Unnecessary queries**: Database calls inside loops
+- **Indexes**: Appropriate indexes for search conditions
+- **Memory usage**: Large datasets loaded into memory
+- **Caching**: Caching strategy for frequently accessed data
+- **Frontend**: Unnecessary re-renders, bundle size impact
+- **API calls**: Excessive API calls, race conditions
 
-### 3. パス3: テストレビュー
+### 3. Pass 3: Test Review
 
-以下の観点でチェック：
+Check for the following:
 
-- **テストの存在**: 新機能/変更に対応するテストの有無
-- **テストの品質**: ハッピーパス以外（異常系、境界値）のテスト
-- **テストの独立性**: 他のテストに依存しないこと
-- **テストデータ**: Factory を使用した適切なテストデータ生成
-- **モック**: 外部サービスの適切なモック化
-- **カバレッジ**: 重要なビジネスロジックのカバレッジ
+- **Test existence**: Whether tests exist for new features/changes
+- **Test quality**: Tests beyond the happy path (error cases, boundary values)
+- **Test independence**: Tests do not depend on other tests
+- **Test data**: Proper test data generation using factories
+- **Mocking**: Appropriate mocking of external services
+- **Coverage**: Coverage of critical business logic
 
-### 4. パス4: 設計・アーキテクチャレビュー
+### 4. Pass 4: Design and Architecture Review
 
-以下の観点でチェック：
+Check for the following:
 
-- **レイヤー分離**: 各レイヤーの責務が適切か
-- **SOLID 原則**: 単一責任、開放閉鎖、依存性逆転の原則
-- **命名規約**: クラス、メソッド、変数の命名が意図を表現しているか
-- **API 設計**: RESTful 設計原則、仕様との整合性
-- **エラーハンドリング**: 例外処理の一貫性、エラーレスポンスの統一
-- **プロジェクト固有パターン**: CLAUDE.md や tech.md に記載のパターンに従っているか
+- **Layer separation**: Whether each layer has appropriate responsibilities
+- **SOLID principles**: Single responsibility, open-closed, dependency inversion
+- **Naming conventions**: Whether class, method, and variable names express intent
+- **API design**: RESTful design principles, consistency with specifications
+- **Error handling**: Consistency in exception handling, unified error responses
+- **Project-specific patterns**: Compliance with patterns described in CLAUDE.md or tech.md
 
-### 5. パス5: コーディング標準準拠チェック
+### 5. Pass 5: Coding Standards Compliance
 
-プロジェクトのコーディング標準に対して確認。
-標準ファイルが存在する場合はそれを参照。
+Verify compliance with the project's coding standards.
+Reference the standards file if one exists.
 
-### 6. レビュー結果の出力
+### 6. Output Review Results
 
-以下の形式で結果を出力：
+Output results in the following format:
 
 ```
-## 敵対的コードレビュー結果
+## Adversarial Code Review Results
 
-### 判定: [差し戻し / 条件付き承認 / 承認]
+### Verdict: [Rejected / Conditionally Approved / Approved]
 
-### セキュリティ
-| 重要度 | ファイル | 行 | 指摘内容 | 修正案 |
-|--------|---------|-----|---------|--------|
+### Security
+| Severity | File | Line | Finding | Suggested Fix |
+|----------|------|------|---------|---------------|
 
-### パフォーマンス
-| 重要度 | ファイル | 行 | 指摘内容 | 修正案 |
-|--------|---------|-----|---------|--------|
+### Performance
+| Severity | File | Line | Finding | Suggested Fix |
+|----------|------|------|---------|---------------|
 
-### テスト
-| 重要度 | ファイル | 行 | 指摘内容 | 修正案 |
-|--------|---------|-----|---------|--------|
+### Testing
+| Severity | File | Line | Finding | Suggested Fix |
+|----------|------|------|---------|---------------|
 
-### 設計
-| 重要度 | ファイル | 行 | 指摘内容 | 修正案 |
-|--------|---------|-----|---------|--------|
+### Design
+| Severity | File | Line | Finding | Suggested Fix |
+|----------|------|------|---------|---------------|
 
-### 標準準拠
-| 項目 | 状態 | コメント |
-|------|------|---------|
+### Standards Compliance
+| Item | Status | Comment |
+|------|--------|---------|
 
-### サマリー
-- 致命的: X件
-- 重要: X件
-- 軽微: X件
-- 提案: X件
+### Summary
+- Critical: X issues
+- Major: X issues
+- Minor: X issues
+- Suggestions: X items
 
-### 必須対応事項（承認条件）
-1. [必ず修正が必要な項目]
+### Required Actions (Approval Conditions)
+1. [Items that must be fixed]
 ```
 
-### 7. 修正後の再レビュー
+### 7. Re-review After Fixes
 
-ユーザーが修正を行った後、再度同じ手順でレビューを実施。
-**全ての致命的・重要な指摘が解決されるまで承認しない。**
+After the user makes fixes, conduct the review again following the same procedure.
+**Do not approve until all critical and major findings are resolved.**
 
-修正が中途半端な場合は以下のように指示：
-「今わかっている全てを踏まえて、これを捨てて、エレガントな解決策を実装して」
+If fixes are incomplete, instruct the user:
+"Given everything we know now, throw this away and implement an elegant solution."
 
-## 重要な注意事項
+## Important Notes
 
-- レビューは意図的に厳しく行う（承認は容易に出さない）
-- 指摘には必ず具体的な修正案を含める
-- セキュリティ関連の指摘は最優先で対応を求める
-- 「動けばいい」は承認理由にならない
+- Reviews are intentionally strict (approval is not given easily)
+- All findings must include a specific suggested fix
+- Security-related findings take the highest priority
+- "It works" is not a valid reason for approval

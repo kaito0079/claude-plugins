@@ -1,105 +1,105 @@
 ---
 name: techdebt
-description: セッション終了時にコードベースの技術的負債を検出し、レポートを生成します。重複コード、コードスメル、未使用インポート、過度に複雑な関数を特定します。
+description: Detects technical debt in the codebase and generates a report. Identifies code duplication, code smells, unused imports, and overly complex functions.
 ---
 
-# 技術的負債の検出と報告
+# Technical Debt Detection and Reporting
 
-コードベースをスキャンして技術的負債を特定し、改善提案をまとめたレポートを生成
+Scan the codebase to identify technical debt and generate a report with improvement suggestions.
 
-## このスキルを使用するタイミング
+## When to Use This Skill
 
-- セッション終了時の品質チェック
-- PR 作成前のコード品質確認
-- 定期的な技術的負債の棚卸し
-- リファクタリング対象の特定
+- Quality check at the end of a session
+- Code quality verification before creating a PR
+- Periodic technical debt inventory
+- Identifying refactoring targets
 
 ## Instructions
 
-以下の手順で技術的負債を検出し、レポートを生成：
+Follow these steps to detect technical debt and generate a report:
 
-### 1. スキャン対象の確認
+### 1. Identify Scan Target
 
-まず、現在のセッションで変更されたファイルを確認：
+First, check the files changed during the current session:
 
 ```bash
 git diff --name-only HEAD~5
 git diff --name-only --cached
 ```
 
-変更がない場合は、ユーザーに対象ディレクトリを確認する。
+If there are no changes, ask the user to specify the target directory.
 
-### 2. 重複コードの検出
+### 2. Detect Code Duplication
 
-変更されたファイルと同じモジュール内で、類似パターンを検索：
+Search for similar patterns within the same module as the changed files:
 
-- 同じロジックの繰り返し（3回以上）
-- コピーペーストが疑われるコードブロック
-- 共通化可能なバリデーションやデータ変換処理
+- Repeated logic (3 or more occurrences)
+- Code blocks suspected of being copy-pasted
+- Validation or data transformation logic that could be consolidated
 
-### 3. コードスメルの特定
+### 3. Identify Code Smells
 
-以下の観点でコードを分析：
+Analyze code from the following perspectives:
 
-**バックエンド:**
-- 100行を超えるメソッド
-- 4階層以上のネスト
-- 5つ以上のパラメータを持つメソッド
-- God Object（責務が多すぎるクラス）
-- N+1 クエリの可能性
-- 不適切な例外処理（空の catch ブロック等）
+**Backend:**
+- Methods exceeding 100 lines
+- Nesting deeper than 4 levels
+- Methods with 5 or more parameters
+- God Objects (classes with too many responsibilities)
+- Potential N+1 queries
+- Improper exception handling (empty catch blocks, etc.)
 
-**フロントエンド:**
-- 200行を超えるコンポーネント
-- props の数が多すぎるコンポーネント（7個以上）
-- useEffect の依存配列の不備
-- 不要な再レンダリングの可能性
-- any 型の使用
+**Frontend:**
+- Components exceeding 200 lines
+- Components with too many props (7 or more)
+- useEffect dependency array issues
+- Potential unnecessary re-renders
+- Usage of `any` type
 
-### 4. 未使用コードの検出
+### 4. Detect Unused Code
 
-- 未使用の import 文
-- 未使用の変数・関数
-- デッドコード（到達不可能なコードブロック）
-- TODO/FIXME コメントの集計
+- Unused import statements
+- Unused variables and functions
+- Dead code (unreachable code blocks)
+- Tally of TODO/FIXME comments
 
-### 5. セキュリティ関連の確認
+### 5. Security-Related Checks
 
-- ハードコードされた認証情報やシークレット
-- SQL インジェクションの可能性
-- XSS の可能性
-- 不適切な権限チェック
+- Hardcoded credentials or secrets
+- Potential SQL injection
+- Potential XSS
+- Improper authorization checks
 
-### 6. レポートの生成
+### 6. Generate Report
 
-分析結果を以下の形式で出力：
+Output the analysis results in the following format:
 
 ```
-## 技術的負債レポート
-日付: YYYY-MM-DD
-対象: [スキャン対象のファイル/ディレクトリ]
+## Technical Debt Report
+Date: YYYY-MM-DD
+Target: [Scanned files/directories]
 
-### 高優先度（即座に対応推奨）
-- [セキュリティリスクや重大なバグの可能性]
+### High Priority (Immediate action recommended)
+- [Security risks or potential critical bugs]
 
-### 中優先度（次のスプリントで対応）
-- [コードスメル、設計上の問題]
+### Medium Priority (Address in next sprint)
+- [Code smells, design issues]
 
-### 低優先度（リファクタリング時に対応）
-- [スタイルの改善、軽微な重複]
+### Low Priority (Address during refactoring)
+- [Style improvements, minor duplication]
 
-### 統計
-- スキャンファイル数: X
-- TODO/FIXME数: X
-- 重複コードブロック数: X
-- 複雑度の高い関数数: X
+### Statistics
+- Files scanned: X
+- TODO/FIXME count: X
+- Duplicate code blocks: X
+- High-complexity functions: X
 
-### 改善提案
-1. [具体的な改善提案と対象ファイル]
+### Improvement Suggestions
+1. [Specific improvement suggestion with target file]
 ```
 
-## 重要な注意事項
+## Important Notes
 
-- スキャンは読み取り専用で行い、ファイルを変更しない
-- レポートは標準出力に表示（ファイルに保存する場合はユーザーに確認）
-- 大規模なスキャンは時間がかかるため、対象を絞ることを推奨
+- Scanning is read-only; do not modify any files
+- Display the report to standard output (confirm with the user before saving to a file)
+- For large-scale scans, recommend narrowing the target scope as it may take time

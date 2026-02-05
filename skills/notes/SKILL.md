@@ -1,89 +1,89 @@
 ---
 name: notes
-description: セッションの学びや発見を .claude/notes/ ディレクトリに記録し、チーム全体の知識ベースとして管理します。トピック別に整理し、README.md のインデックスを更新します。
+description: Records learnings and discoveries from the session in the .claude/notes/ directory, managed as a team-wide knowledge base. Organizes entries by topic and updates the README.md index.
 ---
 
-# セッションノートの記録
+# Session Notes Recording
 
-学びや発見を .claude/notes/ にトピック別に記録し、チーム共有の知識ベースを構築
+Record learnings and discoveries in .claude/notes/, organized by topic, to build a shared team knowledge base.
 
-## このスキルを使用するタイミング
+## When to Use This Skill
 
-- セッション中に重要な発見があった場合
-- バグの原因と修正方法を記録する場合
-- アーキテクチャ上の判断を記録する場合
-- パフォーマンス改善の知見を記録する場合
-- PR 作成時に得た知見をまとめる場合
+- When a significant discovery is made during a session
+- When recording the cause and fix for a bug
+- When recording architectural decisions
+- When recording performance improvement insights
+- When summarizing knowledge gained during PR creation
 
 ## Instructions
 
-### 1. 既存ノートの確認
+### 1. Review Existing Notes
 
-まず、現在のノート構成を確認。`.claude/notes/` 配下のファイルを読み取る。
-`.claude/notes/README.md` の内容を確認してインデックスを把握。
+First, check the current notes structure. Read the files under `.claude/notes/`.
+Review the contents of `.claude/notes/README.md` to understand the index.
 
-### 2. 記録内容の分類
+### 2. Classify the Content
 
-発見・学びを以下のカテゴリに分類：
+Classify discoveries and learnings into the following categories:
 
-| ファイル | 内容 |
-|---------|------|
-| `mistakes-and-fixes.md` | ミスとその修正方法、再発防止策 |
-| `architecture-decisions.md` | アーキテクチャ上の判断とその理由 |
-| `performance-insights.md` | パフォーマンスに関する知見 |
-| `security-notes.md` | セキュリティ関連の注意事項 |
-| `domain-knowledge.md` | ビジネスドメインの理解 |
-| `dev-environment.md` | 開発環境の Tips やトラブルシューティング |
-| `testing-patterns.md` | テストパターンやベストプラクティス |
+| File | Content |
+|------|---------|
+| `mistakes-and-fixes.md` | Mistakes, their fixes, and prevention strategies |
+| `architecture-decisions.md` | Architectural decisions and their rationale |
+| `performance-insights.md` | Performance-related insights |
+| `security-notes.md` | Security-related notes |
+| `domain-knowledge.md` | Business domain knowledge |
+| `dev-environment.md` | Development environment tips and troubleshooting |
+| `testing-patterns.md` | Testing patterns and best practices |
 
-新しいカテゴリが必要な場合は、ファイルを作成して README.md に追加。
+If a new category is needed, create the file and add it to README.md.
 
-### 3. ノートの記述形式
+### 3. Note Entry Format
 
-各ファイル内のエントリは以下の形式で追記：
+Append entries within each file using the following format:
 
 ```markdown
-### [簡潔なタイトル]
-**日付**: YYYY-MM-DD
-**関連PR**: #XXX（あれば）
-**関連ファイル**: path/to/file.php（あれば）
+### [Concise Title]
+**Date**: YYYY-MM-DD
+**Related PR**: #XXX (if applicable)
+**Related Files**: path/to/file.php (if applicable)
 
-[内容の記述]
+[Description of the content]
 
-**教訓**: [将来同じ状況に遭遇した場合の対処法]
+**Lesson Learned**: [How to handle the same situation in the future]
 ```
 
-### 4. README.md インデックスの更新
+### 4. Update README.md Index
 
-新しいエントリを追加した場合、`.claude/notes/README.md` を更新：
+When a new entry is added, update `.claude/notes/README.md`:
 
-- 「ファイル一覧」テーブルに新規ファイルがあれば追加
-- 「最終更新」列を今日の日付に更新
-- 「最近の追加」セクションに新しいエントリのタイトルとファイル名を追加
+- Add new files to the "File List" table if applicable
+- Update the "Last Updated" column to today's date
+- Add the new entry's title and filename to the "Recent Additions" section
 
-### 5. CLAUDE.md への反映（重要な場合）
+### 5. Reflect in CLAUDE.md (If Significant)
 
-以下に該当する発見は、CLAUDE.md 本体への追記も検討：
+For discoveries that meet the following criteria, consider adding them to CLAUDE.md:
 
-- 全セッションで参照すべき重要なルール
-- 繰り返し発生するミスの防止策
-- 新しい開発パターンやワークフロー
+- Important rules that should be referenced in every session
+- Prevention strategies for recurring mistakes
+- New development patterns or workflows
 
-ユーザーに確認してから CLAUDE.md を更新すること。
+Confirm with the user before updating CLAUDE.md.
 
-### 6. セッション中の学びの要約
+### 6. Session Summary
 
-セッション終了時に呼ばれた場合、以下を自動的にまとめる：
+When invoked at session end, automatically summarize the following:
 
-- このセッションで行った主な変更
-- 遭遇した問題と解決方法
-- 発見したパターンや注意点
-- 次回以降に活かせる知見
+- Major changes made during this session
+- Problems encountered and their solutions
+- Patterns and considerations discovered
+- Insights applicable to future sessions
 
-## 重要な注意事項
+## Important Notes
 
-- ノートはトピック別に整理する（時系列ではない）
-- 同じトピックの既存エントリがあれば統合・更新する
-- 機密情報（API キー、パスワード等）は絶対に記録しない
-- `.claude/notes/` は git にコミットし、チーム全体で共有する
-- エントリは簡潔に、しかし将来の自分が理解できる程度に詳細に記述する
+- Organize notes by topic (not chronologically)
+- If an existing entry covers the same topic, consolidate or update it
+- Never record sensitive information (API keys, passwords, etc.)
+- `.claude/notes/` should be committed to git and shared across the team
+- Keep entries concise, but detailed enough for your future self to understand

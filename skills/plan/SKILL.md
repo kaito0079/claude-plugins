@@ -1,131 +1,131 @@
 ---
 name: plan
-description: 計画モードを強制し、80%の計画・20%の実装の原則に従って設計ドキュメントを作成してから実装に移ります。問題分析、アプローチ選択、実装ステップの構造化を行います。
+description: Forces planning mode following the 80% planning / 20% implementation principle. Creates a design document before any coding begins, covering problem analysis, approach selection, and structured implementation steps.
 ---
 
-# 計画モード（80/20 ルール）
+# Planning Mode (80/20 Rule)
 
-コーディング前に徹底的な計画を行い、設計ドキュメントを作成
+Conduct thorough planning and create a design document before writing any code.
 
-## このスキルを使用するタイミング
+## When to Use This Skill
 
-- 新機能の実装を開始する前
-- 大規模なリファクタリングの前
-- 複雑なバグ修正の前
-- アーキテクチャの変更を伴う作業の前
+- Before implementing a new feature
+- Before a large-scale refactoring
+- Before a complex bug fix
+- Before work involving architectural changes
 
 ## Instructions
 
-**重要: このスキルが呼ばれた場合、即座にコードを書き始めてはいけません。**
-**80% の時間を計画に、20% を実装に使うことを意識してください。**
+**IMPORTANT: When this skill is invoked, do NOT start writing code immediately.**
+**Spend 80% of your time on planning and 20% on implementation.**
 
-### 1. 問題分析フェーズ
+### 1. Problem Analysis Phase
 
-まず、解決すべき問題を正確に理解する：
+First, understand the problem precisely:
 
-#### 1a. 要求の整理
-- ユーザーが達成したいことは何か
-- 成功基準は何か（何をもって「完了」とするか）
-- 制約条件は何か
+#### 1a. Gather Requirements
+- What does the user want to achieve?
+- What are the success criteria (what defines "done")?
+- What are the constraints?
 
-#### 1b. 現状調査
-- 既存コードの関連部分を読む
-- 影響を受けるファイルを特定する
-- 既存のテストを確認する
-- 関連する API 仕様を確認する
+#### 1b. Investigate Current State
+- Read the relevant parts of the existing codebase
+- Identify affected files
+- Review existing tests
+- Check related API specifications
 
-#### 1c. 問題の定義
+#### 1c. Define the Problem
 
-以下の形式で問題を明確化：
-
-```
-## 問題定義
-**何を**: [実装/修正する対象]
-**なぜ**: [この変更が必要な理由]
-**制約**: [技術的・ビジネス的制約]
-**影響範囲**: [変更が影響するファイル・機能]
-```
-
-### 2. アプローチ検討フェーズ
-
-最低 2 つの代替アプローチを検討する：
+Clearly articulate the problem in the following format:
 
 ```
-## アプローチ A: [名前]
-**概要**: [1-2文での説明]
-**メリット**: [利点を列挙]
-**デメリット**: [欠点を列挙]
-**工数**: [相対的な工数 - 小/中/大]
-**リスク**: [潜在的リスク]
-
-## アプローチ B: [名前]
-**概要**: ...
+## Problem Definition
+**What**: [Target to implement/fix]
+**Why**: [Reason this change is necessary]
+**Constraints**: [Technical and business constraints]
+**Impact Scope**: [Files and features affected by the change]
 ```
 
-### 3. アプローチ選択フェーズ
+### 2. Approach Exploration Phase
 
-選択したアプローチとその理由を記述：
-
-```
-## 選択: アプローチ [X]
-**理由**: [選択理由を具体的に]
-**トレードオフ**: [受け入れるトレードオフ]
-```
-
-ユーザーに選択を確認してから次のフェーズに進む。
-
-### 4. 設計ドキュメントの作成
-
-以下の構成で設計ドキュメントを作成：
+Evaluate at least 2 alternative approaches:
 
 ```
-## 設計ドキュメント
+## Approach A: [Name]
+**Overview**: [1-2 sentence description]
+**Pros**: [List of advantages]
+**Cons**: [List of disadvantages]
+**Effort**: [Relative effort - Small / Medium / Large]
+**Risks**: [Potential risks]
 
-### 変更対象ファイル一覧
-| ファイル | 変更種別 | 変更内容 |
-|---------|---------|---------|
-| path/to/file | 新規/修正/削除 | 概要 |
+## Approach B: [Name]
+**Overview**: ...
+```
 
-### データベース変更（該当する場合）
-- マイグレーション内容
-- シーダー変更
+### 3. Approach Selection Phase
 
-### API 変更（該当する場合）
-- エンドポイント
-- リクエスト/レスポンス形式
+Document the selected approach and rationale:
 
-### テスト計画
-- 追加するテストケース
-- テストデータの準備
+```
+## Selected: Approach [X]
+**Rationale**: [Specific reasons for selection]
+**Trade-offs**: [Trade-offs accepted]
+```
 
-### 実装ステップ（順序付き）
-1. [最初に行うこと]
-2. [次に行うこと]
+Confirm the selection with the user before proceeding to the next phase.
+
+### 4. Design Document Creation
+
+Create a design document with the following structure:
+
+```
+## Design Document
+
+### Files to Change
+| File | Change Type | Description |
+|------|-------------|-------------|
+| path/to/file | New / Modify / Delete | Summary |
+
+### Database Changes (if applicable)
+- Migration details
+- Seeder changes
+
+### API Changes (if applicable)
+- Endpoints
+- Request/response formats
+
+### Test Plan
+- Test cases to add
+- Test data preparation
+
+### Implementation Steps (ordered)
+1. [First step]
+2. [Next step]
 3. ...
 
-### リスクと軽減策
-| リスク | 影響度 | 軽減策 |
-|--------|--------|--------|
+### Risks and Mitigations
+| Risk | Impact | Mitigation |
+|------|--------|------------|
 ```
 
-### 5. ユーザー確認
+### 5. User Confirmation
 
-設計ドキュメントをユーザーに提示し、承認を得る。
-**承認なしに実装を開始してはいけません。**
+Present the design document to the user and obtain approval.
+**Do NOT begin implementation without approval.**
 
-### 6. 実装フェーズ
+### 6. Implementation Phase
 
-承認後、設計ドキュメントの実装ステップに従って実装。
-各ステップ完了後にユーザーに進捗を報告。
+After approval, implement following the design document's implementation steps.
+Report progress to the user after each step.
 
-### 7. 振り返り
+### 7. Retrospective
 
-実装完了後、設計からの逸脱があれば記録：
-- 計画と実際の差分
-- 次回に活かせる学び
+After implementation is complete, record any deviations from the design:
+- Differences between the plan and actual implementation
+- Lessons learned for future reference
 
-## 重要な注意事項
+## Important Notes
 
-- 「簡単だから計画不要」は禁止。このスキルが呼ばれた場合は必ずこのプロセスを経る
-- 実装中に設計からの逸脱が必要になった場合、ユーザーに相談する
-- うまくいかない時に無理やり押し進めるな。計画モードに戻れ
+- "It's simple, no planning needed" is NOT allowed. If this skill is invoked, always follow this process
+- If deviation from the design becomes necessary during implementation, consult the user
+- If things are not working, do not force your way through. Return to planning mode
