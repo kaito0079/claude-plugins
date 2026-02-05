@@ -67,6 +67,27 @@ zinfo                  # 状態表示
 cdev / crev / cana     # 各 worktree で Claude Code 起動
 ```
 
+### Tips
+
+**実装(za)とレビュー(zb)を並行するには？**
+
+zaだけfeatureブランチ、zbはmainのままでOK。
+Git worktreeは同じブランチを複数worktreeで同時にcheckoutできないため、別ブランチにするのが自然。
+
+```bash
+zswitch a feature/xxx   # zaで作業ブランチに切替
+# zaで実装 → コミット
+# zbからレビュー:
+git diff main..feature/xxx
+git log main..feature/xxx
+```
+
+zbでブランチを切り替えずに特定ファイルを見たい場合:
+
+```bash
+git show feature/xxx:path/to/file.ts
+```
+
 ## スキル詳細
 
 ### `/plan` - 計画モード
