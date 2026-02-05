@@ -48,8 +48,8 @@ claude-tools/
 
 ```bash
 cd /path/to/project
-zwt init        # worktree 作成 (project-a, project-b, project-c)
-zwt register    # zuse に登録
+claude-worktree init        # worktree 作成 (project-a, project-b, project-c)
+claude-worktree register    # zuse に登録
 ```
 
 ### 日常の使い方

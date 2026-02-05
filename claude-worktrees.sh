@@ -6,11 +6,11 @@
 #   echo 'source ~/.claude-worktrees.sh' >> ~/.zshrc
 #
 # 使い方:
-#   zwt                 ヘルプ表示
-#   zwt init            現在のプロジェクトに worktree を作成
-#   zwt register        現在のプロジェクトを zuse に登録
-#   zwt remove          worktree を削除
-#   zwt status          worktree の状態を表示
+#   claude-worktree              ヘルプ表示
+#   claude-worktree init         現在のプロジェクトに worktree を作成
+#   claude-worktree register     現在のプロジェクトを zuse に登録
+#   claude-worktree remove       worktree を削除
+#   claude-worktree status       worktree の状態を表示
 #
 #   zuse                登録済みプロジェクト一覧
 #   zuse <project>      プロジェクトを切り替え
@@ -27,8 +27,8 @@ export CLAUDE_WT_A=""
 export CLAUDE_WT_B=""
 export CLAUDE_WT_C=""
 
-# --- セットアップ: zwt コマンド ---
-zwt() {
+# --- セットアップ: claude-worktree コマンド ---
+claude-worktree() {
     local subcmd="${1:-help}"
 
     # 現在のディレクトリから git プロジェクトを検出
@@ -73,7 +73,7 @@ zwt() {
             done
 
             echo ""
-            echo "次: zwt register"
+            echo "次: claude-worktree register"
             ;;
 
         register)
@@ -125,18 +125,18 @@ EOF
 
         help|*)
             cat <<'HELP'
-zwt - Git Worktree セットアップ
+claude-worktree - Git Worktree セットアップ
 
 使い方（プロジェクトディレクトリ内で実行）:
-  zwt init       worktree を作成（a/b/c の3つ）
-  zwt register   プロジェクトを zuse に登録
-  zwt remove     worktree を削除
-  zwt status     worktree の状態を表示
+  claude-worktree init       worktree を作成（a/b/c の3つ）
+  claude-worktree register   プロジェクトを zuse に登録
+  claude-worktree remove     worktree を削除
+  claude-worktree status     worktree の状態を表示
 
 初回セットアップ:
   cd /path/to/project
-  zwt init
-  zwt register
+  claude-worktree init
+  claude-worktree register
 
 以降:
   zuse <project>   プロジェクトを切り替え
@@ -166,7 +166,7 @@ zuse() {
         done
         if [ "$found" -eq 0 ]; then
             echo "  (なし)"
-            echo "  cd /path/to/project && zwt init && zwt register"
+            echo "  cd /path/to/project && claude-worktree init && claude-worktree register"
         fi
         return
     fi
@@ -174,7 +174,7 @@ zuse() {
     local config="$CLAUDE_WT_CONFIG_DIR/$project.sh"
     if [ ! -f "$config" ]; then
         echo "未登録: '$project'"
-        echo "cd /path/to/$project && zwt init && zwt register"
+        echo "cd /path/to/$project && claude-worktree init && claude-worktree register"
         return 1
     fi
 
