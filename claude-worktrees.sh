@@ -73,7 +73,12 @@ claude-worktree() {
             done
 
             echo ""
-            echo "次: claude-worktree register"
+            read -p "zuse に登録しますか？ [Y/n]: " answer
+            if [[ "$answer" != "n" && "$answer" != "N" ]]; then
+                claude-worktree register
+            else
+                echo "後で登録する場合: claude-worktree register"
+            fi
             ;;
 
         register)
