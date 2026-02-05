@@ -2,13 +2,15 @@
 set -euo pipefail
 
 # claude-tools インストーラー
-# シンボリックリンクを作成して ~/.claude/skills/ と ~/.claude-worktrees.sh を設定
+# シンボリックリンクを作成して ~/.claude/skills/, ~/.claude/agents/, ~/.claude-worktrees.sh を設定
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_DIR="$SCRIPT_DIR/skills"
+AGENTS_DIR="$SCRIPT_DIR/agents"
 WORKTREES_SH="$SCRIPT_DIR/claude-worktrees.sh"
 
 CLAUDE_SKILLS_DIR="$HOME/.claude/skills"
+CLAUDE_AGENTS_DIR="$HOME/.claude/agents"
 
 usage() {
     cat <<'USAGE'
@@ -27,26 +29,50 @@ install() {
     echo "ソース: $SCRIPT_DIR"
     echo ""
 
-    # ~/.claude/skills/ を作成
+    # ~/.claude/skills/ と ~/.claude/agents/ を作成
     mkdir -p "$CLAUDE_SKILLS_DIR"
+    mkdir -p "$CLAUDE_AGENTS_DIR"
 
     # スキルのシンボリックリンク
+    echo "--- Skills ---"
     for skill_dir in "$SKILLS_DIR"/*/; do
+        [ -d "$skill_dir" ] || continue
         local name
         name="$(basename "$skill_dir")"
         local target="$CLAUDE_SKILLS_DIR/$name"
 
         if [ -L "$target" ]; then
-            echo "[更新] $name"
+            echo "[更新] skills/$name"
             rm "$target"
         elif [ -d "$target" ]; then
-            echo "[スキップ] $name (実ディレクトリが存在。手動で削除してください)"
+            echo "[スキップ] skills/$name (実ディレクトリが存在。手動で削除してください)"
             continue
         else
-            echo "[作成] $name"
+            echo "[作成] skills/$name"
         fi
 
         ln -s "$skill_dir" "$target"
+    done
+
+    # エージェントのシンボリックリンク
+    echo "--- Agents ---"
+    for agent_file in "$AGENTS_DIR"/*.md; do
+        [ -f "$agent_file" ] || continue
+        local name
+        name="$(basename "$agent_file")"
+        local target="$CLAUDE_AGENTS_DIR/$name"
+
+        if [ -L "$target" ]; then
+            echo "[更新] agents/$name"
+            rm "$target"
+        elif [ -f "$target" ]; then
+            echo "[スキップ] agents/$name (実ファイルが存在。手動で削除してください)"
+            continue
+        else
+            echo "[作成] agents/$name"
+        fi
+
+        ln -s "$agent_file" "$target"
     done
 
     # claude-worktrees.sh のシンボリックリンク
@@ -79,12 +105,25 @@ uninstall() {
     echo "=== claude-tools アンインストール ==="
 
     for skill_dir in "$SKILLS_DIR"/*/; do
+        [ -d "$skill_dir" ] || continue
         local name
         name="$(basename "$skill_dir")"
         local target="$CLAUDE_SKILLS_DIR/$name"
 
         if [ -L "$target" ]; then
-            echo "[削除] $name"
+            echo "[削除] skills/$name"
+            rm "$target"
+        fi
+    done
+
+    for agent_file in "$AGENTS_DIR"/*.md; do
+        [ -f "$agent_file" ] || continue
+        local name
+        name="$(basename "$agent_file")"
+        local target="$CLAUDE_AGENTS_DIR/$name"
+
+        if [ -L "$target" ]; then
+            echo "[削除] agents/$name"
             rm "$target"
         fi
     done
@@ -101,9 +140,11 @@ uninstall() {
 
 status() {
     echo "=== claude-tools 状態 ==="
-    echo ""
 
+    echo ""
+    echo "--- Skills ---"
     for skill_dir in "$SKILLS_DIR"/*/; do
+        [ -d "$skill_dir" ] || continue
         local name
         name="$(basename "$skill_dir")"
         local target="$CLAUDE_SKILLS_DIR/$name"
@@ -117,6 +158,25 @@ status() {
         fi
     done
 
+    echo ""
+    echo "--- Agents ---"
+    for agent_file in "$AGENTS_DIR"/*.md; do
+        [ -f "$agent_file" ] || continue
+        local name
+        name="$(basename "$agent_file" .md)"
+        local target="$CLAUDE_AGENTS_DIR/$name.md"
+
+        if [ -L "$target" ]; then
+            echo "  $name: $(readlink "$target")"
+        elif [ -f "$target" ]; then
+            echo "  $name: 実ファイル (リンクではない)"
+        else
+            echo "  $name: 未インストール"
+        fi
+    done
+
+    echo ""
+    echo "--- Worktrees ---"
     local wt_target="$HOME/.claude-worktrees.sh"
     if [ -L "$wt_target" ]; then
         echo "  worktrees: $(readlink "$wt_target")"
