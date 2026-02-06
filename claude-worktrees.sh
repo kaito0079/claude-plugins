@@ -8,14 +8,14 @@
 # 使い方:
 #   claude-worktree              ヘルプ表示
 #   claude-worktree init         現在のプロジェクトに worktree を作成
-#   claude-worktree register     現在のプロジェクトを zuse に登録
+#   claude-worktree register     現在のプロジェクトを wtuse に登録
 #   claude-worktree remove       worktree を削除
 #   claude-worktree status       worktree の状態を表示
 #
-#   zuse                登録済みプロジェクト一覧
-#   zuse <project>      プロジェクトを切り替え
-#   za / zb / zc        各 worktree に移動
-#   z0                  プロジェクトルートに移動
+#   wtuse               登録済みプロジェクト一覧
+#   wtuse <project>     プロジェクトを切り替え
+#   wt1 / wt2 / wt3     各 worktree に移動
+#   wt0                 プロジェクトルートに移動
 
 CLAUDE_WT_CONFIG_DIR="$HOME/.claude-worktrees.d"
 mkdir -p "$CLAUDE_WT_CONFIG_DIR"
@@ -23,9 +23,9 @@ mkdir -p "$CLAUDE_WT_CONFIG_DIR"
 # --- 状態変数 ---
 export CLAUDE_WT_ACTIVE=""
 export CLAUDE_WT_ROOT=""
-export CLAUDE_WT_A=""
-export CLAUDE_WT_B=""
-export CLAUDE_WT_C=""
+export CLAUDE_WT_1=""
+export CLAUDE_WT_2=""
+export CLAUDE_WT_3=""
 
 # --- セットアップ: claude-worktree コマンド ---
 claude-worktree() {
@@ -42,7 +42,7 @@ claude-worktree() {
 
     if [ -n "$project_root" ]; then
         project_name="$(basename "$project_root")"
-        work_base="$project_root/.worktrees"
+        work_base="$(dirname "$project_root")"
     fi
 
     case "$subcmd" in
@@ -52,20 +52,10 @@ claude-worktree() {
             echo "作成先: $work_base/"
             echo ""
 
-            # .worktrees ディレクトリを作成
-            mkdir -p "$work_base"
-
-            # .gitignore に .worktrees/ を追加
-            local gitignore="$project_root/.gitignore"
-            if [ ! -f "$gitignore" ] || ! grep -qx '\.worktrees/' "$gitignore" 2>/dev/null; then
-                echo '.worktrees/' >> "$gitignore"
-                echo "[.gitignore] .worktrees/ を追加しました"
-            fi
-
-            local suffixes=("a" "b" "c")
+            local suffixes=("1" "2" "3")
             for s in "${suffixes[@]}"; do
-                local dir="wt-${s}"
-                local branch="${project_name}/wt-${s}"
+                local dir="${project_name}-wt${s}"
+                local branch="${project_name}/wt${s}"
                 local wt_path="$work_base/$dir"
 
                 if [ -d "$wt_path" ]; then
@@ -84,7 +74,7 @@ claude-worktree() {
             done
 
             echo ""
-            read -p "zuse に登録しますか？ [Y/n]: " answer
+            read -p "wtuse に登録しますか？ [Y/n]: " answer
             if [[ "$answer" != "n" && "$answer" != "N" ]]; then
                 claude-worktree register
             else
@@ -96,20 +86,20 @@ claude-worktree() {
             local config="$CLAUDE_WT_CONFIG_DIR/$project_name.sh"
             cat > "$config" <<EOF
 export CLAUDE_WT_ROOT="$project_root"
-export CLAUDE_WT_A="$work_base/wt-a"
-export CLAUDE_WT_B="$work_base/wt-b"
-export CLAUDE_WT_C="$work_base/wt-c"
+export CLAUDE_WT_1="$work_base/${project_name}-wt1"
+export CLAUDE_WT_2="$work_base/${project_name}-wt2"
+export CLAUDE_WT_3="$work_base/${project_name}-wt3"
 EOF
             echo "$project_name" > "$CLAUDE_WT_CONFIG_DIR/.last"
             echo "'$project_name' を登録しました"
-            echo "使い方: zuse $project_name"
+            echo "使い方: wtuse $project_name"
             ;;
 
         remove)
             echo "=== Worktree 削除: $project_name ==="
-            local suffixes=("a" "b" "c")
+            local suffixes=("1" "2" "3")
             for s in "${suffixes[@]}"; do
-                local dir="wt-${s}"
+                local dir="${project_name}-wt${s}"
                 local wt_path="$work_base/$dir"
                 if [ -d "$wt_path" ]; then
                     echo "[削除中] $dir"
@@ -125,16 +115,16 @@ EOF
             echo "=== $project_name ==="
             git -C "$project_root" worktree list
             echo ""
-            local suffixes=("a" "b" "c")
+            local suffixes=("1" "2" "3")
             for s in "${suffixes[@]}"; do
-                local dir="wt-${s}"
+                local dir="${project_name}-wt${s}"
                 local wt_path="$work_base/$dir"
                 if [ -d "$wt_path" ]; then
                     local br
                     br=$(git -C "$wt_path" branch --show-current 2>/dev/null || echo "detached")
-                    echo "  z$s ($dir): $br"
+                    echo "  wt$s ($dir): $br"
                 else
-                    echo "  z$s ($dir): 未作成"
+                    echo "  wt$s ($dir): 未作成"
                 fi
             done
             ;;
@@ -144,8 +134,8 @@ EOF
 claude-worktree - Git Worktree セットアップ
 
 使い方（プロジェクトディレクトリ内で実行）:
-  claude-worktree init       worktree を作成（a/b/c の3つ）
-  claude-worktree register   プロジェクトを zuse に登録
+  claude-worktree init       worktree を作成（1/2/3 の3つ）
+  claude-worktree register   プロジェクトを wtuse に登録
   claude-worktree remove     worktree を削除
   claude-worktree status     worktree の状態を表示
 
@@ -155,15 +145,16 @@ claude-worktree - Git Worktree セットアップ
   claude-worktree register
 
 以降:
-  zuse <project>   プロジェクトを切り替え
-  za / zb / zc     各 worktree に移動
+  wtuse <project>    プロジェクトを切り替え
+  wt1 / wt2 / wt3    各 worktree に移動
+  wt0                プロジェクトルートに移動
 HELP
             ;;
     esac
 }
 
 # --- プロジェクト切り替え ---
-zuse() {
+wtuse() {
     local project="$1"
 
     if [ -z "$project" ]; then
@@ -198,52 +189,52 @@ zuse() {
     export CLAUDE_WT_ACTIVE="$project"
     echo "$project" > "$CLAUDE_WT_CONFIG_DIR/.last"
     echo "=> $project"
-    zinfo
+    wtinfo
 }
 
 # --- ナビゲーション ---
-za() { [ -n "$CLAUDE_WT_A" ] && cd "$CLAUDE_WT_A" || echo "zuse <project> を先に実行"; }
-zb() { [ -n "$CLAUDE_WT_B" ] && cd "$CLAUDE_WT_B" || echo "zuse <project> を先に実行"; }
-zc() { [ -n "$CLAUDE_WT_C" ] && cd "$CLAUDE_WT_C" || echo "zuse <project> を先に実行"; }
-z0() { [ -n "$CLAUDE_WT_ROOT" ] && cd "$CLAUDE_WT_ROOT" || echo "zuse <project> を先に実行"; }
+wt1() { [ -n "$CLAUDE_WT_1" ] && cd "$CLAUDE_WT_1" || echo "wtuse <project> を先に実行"; }
+wt2() { [ -n "$CLAUDE_WT_2" ] && cd "$CLAUDE_WT_2" || echo "wtuse <project> を先に実行"; }
+wt3() { [ -n "$CLAUDE_WT_3" ] && cd "$CLAUDE_WT_3" || echo "wtuse <project> を先に実行"; }
+wt0() { [ -n "$CLAUDE_WT_ROOT" ] && cd "$CLAUDE_WT_ROOT" || echo "wtuse <project> を先に実行"; }
 
 # --- Claude Code 起動 ---
-cdev() { za && claude; }
-crev() { zb && claude; }
-cana() { zc && claude; }
+c1() { wt1 && claude; }
+c2() { wt2 && claude; }
+c3() { wt3 && claude; }
 
 # --- ユーティリティ ---
-zs() {
-    [ -n "$CLAUDE_WT_ROOT" ] && git -C "$CLAUDE_WT_ROOT" worktree list || echo "zuse <project> を先に実行"
+wts() {
+    [ -n "$CLAUDE_WT_ROOT" ] && git -C "$CLAUDE_WT_ROOT" worktree list || echo "wtuse <project> を先に実行"
 }
 
-zswitch() {
+wtswitch() {
     local target="$1" branch="$2"
     if [ -z "$target" ] || [ -z "$branch" ]; then
-        echo "Usage: zswitch <a|b|c> <branch>"
+        echo "Usage: wtswitch <1|2|3> <branch>"
         return 1
     fi
     case "$target" in
-        a) [ -n "$CLAUDE_WT_A" ] && (cd "$CLAUDE_WT_A" && git checkout "$branch") ;;
-        b) [ -n "$CLAUDE_WT_B" ] && (cd "$CLAUDE_WT_B" && git checkout "$branch") ;;
-        c) [ -n "$CLAUDE_WT_C" ] && (cd "$CLAUDE_WT_C" && git checkout "$branch") ;;
-        *) echo "Usage: zswitch <a|b|c> <branch>"; return 1 ;;
+        1) [ -n "$CLAUDE_WT_1" ] && (cd "$CLAUDE_WT_1" && git checkout "$branch") ;;
+        2) [ -n "$CLAUDE_WT_2" ] && (cd "$CLAUDE_WT_2" && git checkout "$branch") ;;
+        3) [ -n "$CLAUDE_WT_3" ] && (cd "$CLAUDE_WT_3" && git checkout "$branch") ;;
+        *) echo "Usage: wtswitch <1|2|3> <branch>"; return 1 ;;
     esac
 }
 
-zinfo() {
+wtinfo() {
     if [ -z "$CLAUDE_WT_ACTIVE" ]; then
-        echo "zuse <project> を先に実行"
+        echo "wtuse <project> を先に実行"
         return
     fi
     echo "=== $CLAUDE_WT_ACTIVE ==="
-    echo "  z0 : $CLAUDE_WT_ROOT"
+    echo "  wt0 : $CLAUDE_WT_ROOT"
     local d k
-    for k in za zb zc; do
+    for k in wt1 wt2 wt3; do
         case "$k" in
-            za) d="$CLAUDE_WT_A" ;;
-            zb) d="$CLAUDE_WT_B" ;;
-            zc) d="$CLAUDE_WT_C" ;;
+            wt1) d="$CLAUDE_WT_1" ;;
+            wt2) d="$CLAUDE_WT_2" ;;
+            wt3) d="$CLAUDE_WT_3" ;;
         esac
         if [ -d "$d" ]; then
             echo "  $k : $d ($(git -C "$d" branch --show-current 2>/dev/null || echo 'detached'))"
@@ -264,7 +255,7 @@ _claude_worktree_completions() {
     fi
 }
 
-_zuse_completions() {
+_wtuse_completions() {
     local projects=()
     for f in "$CLAUDE_WT_CONFIG_DIR"/*.sh; do
         [ -f "$f" ] || continue
@@ -278,17 +269,17 @@ _zuse_completions() {
     fi
 }
 
-_zswitch_completions() {
+_wtswitch_completions() {
     if [ -n "$ZSH_VERSION" ]; then
         case "$((CURRENT - 1))" in
-            1) _arguments '1:worktree:(a b c)' ;;
+            1) _arguments '1:worktree:(1 2 3)' ;;
             2) local branches; branches=($(git -C "$CLAUDE_WT_ROOT" branch --format='%(refname:short)' 2>/dev/null))
                _arguments "2:branch:(${branches[*]})" ;;
         esac
     elif [ -n "$BASH_VERSION" ]; then
         local cur="${COMP_WORDS[COMP_CWORD]}"
         case "$COMP_CWORD" in
-            1) COMPREPLY=($(compgen -W "a b c" -- "$cur")) ;;
+            1) COMPREPLY=($(compgen -W "1 2 3" -- "$cur")) ;;
             2) local branches; branches=$(git -C "$CLAUDE_WT_ROOT" branch --format='%(refname:short)' 2>/dev/null)
                COMPREPLY=($(compgen -W "$branches" -- "$cur")) ;;
         esac
@@ -297,12 +288,12 @@ _zswitch_completions() {
 
 if [ -n "$ZSH_VERSION" ]; then
     compdef _claude_worktree_completions claude-worktree
-    compdef _zuse_completions zuse
-    compdef _zswitch_completions zswitch
+    compdef _wtuse_completions wtuse
+    compdef _wtswitch_completions wtswitch
 elif [ -n "$BASH_VERSION" ]; then
     complete -F _claude_worktree_completions claude-worktree
-    complete -F _zuse_completions zuse
-    complete -F _zswitch_completions zswitch
+    complete -F _wtuse_completions wtuse
+    complete -F _wtswitch_completions wtswitch
 fi
 
 # --- 起動時: 最後のプロジェクトを復元 ---
