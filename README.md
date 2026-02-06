@@ -25,12 +25,19 @@ source ~/.zshrc
 claude-tools/
 ├── install.sh              symlink 作成/削除
 ├── claude-worktrees.sh     worktree マネージャー (→ ~/.claude-worktrees.sh)
+├── CLAUDE.md               プロジェクトルール
 ├── README.md
-└── skills/
-    ├── plan/SKILL.md       /plan   - 80/20 計画モード
-    ├── review/SKILL.md     /review - 敵対的コードレビュー
-    ├── techdebt/SKILL.md   /techdebt - 技術的負債検出
-    └── notes/SKILL.md      /notes  - ナレッジベース更新
+├── docs/
+│   └── authoring-guide.md  スキル/エージェント作成ガイド
+├── skills/
+│   ├── plan/SKILL.md       /plan   - 80/20 計画モード
+│   ├── review/SKILL.md     /review - 敵対的コードレビュー
+│   ├── techdebt/SKILL.md   /techdebt - 技術的負債検出
+│   ├── notes/SKILL.md      /notes  - ナレッジベース更新
+│   └── commit-helper/SKILL.md  /commit - コミットメッセージ生成
+└── agents/
+    ├── review.md           レビューエージェント
+    └── techdebt.md         技術的負債エージェント
 ```
 
 ## スキル一覧
@@ -41,6 +48,16 @@ claude-tools/
 | review | `/review` | PR作成前。5パスで厳格レビュー |
 | techdebt | `/techdebt` | セッション終了時。負債を検出しレポート |
 | notes | `/notes` | 発見があった時。.claude/notes/ に記録 |
+| commit-helper | `/commit` | コミット時。git log からスタイルを推測しメッセージ生成 |
+
+## エージェント一覧
+
+スキルと連携して自律的にタスクを実行するサブエージェント。
+
+| エージェント | 説明 |
+|-------------|------|
+| review | 厳格なシニアエンジニアとして敵対的コードレビューを実施 |
+| techdebt | コードベースの技術的負債を検出しレポートを生成 |
 
 ## Worktree マネージャー
 
@@ -124,6 +141,15 @@ git show feature/xxx:path/to/file.ts
 ```
 
 `.claude/notes/` にトピック別に記録。README.md のインデックスも更新。
+
+### `/commit` - コミットヘルパー
+
+```
+/commit
+コミットして
+```
+
+`git log` から既存のコミットスタイル（Conventional Commits、スコープ接頭辞など）と言語を推測し、WHY（意図）を含むメッセージを生成。
 
 ## 学習する AI
 

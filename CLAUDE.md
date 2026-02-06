@@ -51,3 +51,18 @@ Before finalizing any new or modified Skill/Agent, verify:
 - [ ] Content is well-structured (clear headings, sections, lists)
 - [ ] Priority levels use MoSCoW + shape notation (if applicable)
 - [ ] No Japanese remains in the file (except annotated domain-specific terms)
+
+## README Maintenance
+
+README.md must stay in sync with the following source files:
+
+| Source | README sections affected |
+|--------|------------------------|
+| `skills/*/SKILL.md` | スキル一覧テーブル・スキル詳細・構成図 |
+| `agents/*.md` | エージェント一覧テーブル・構成図 |
+| `claude-worktrees.sh` | Worktree マネージャーセクション |
+| `install.sh` | インストール手順 |
+
+⬛ MUST
+- When adding, removing, or changing the `description` of a skill or agent, update README.md accordingly
+- README.md is written in Japanese
