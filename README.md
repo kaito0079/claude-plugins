@@ -1,6 +1,6 @@
 # claude-tools
 
-Claude Code のカスタムスキルと worktree マネージャー。
+Claude Code のカスタムスキル、worktree マネージャー、ステータスライン。
 `install.sh` で symlink を張り、全プロジェクトから利用可能。
 
 ## インストール
@@ -25,6 +25,7 @@ source ~/.zshrc
 claude-tools/
 ├── install.sh              symlink 作成/削除
 ├── claude-worktrees.sh     worktree マネージャー (→ ~/.claude-worktrees.sh)
+├── status-line.sh          ステータスライン (→ ~/.claude/statusline.sh)
 ├── CLAUDE.md               プロジェクトルール
 ├── README.md
 ├── docs/
@@ -150,6 +151,37 @@ git show feature/xxx:path/to/file.ts
 ```
 
 `git log` から既存のコミットスタイル（Conventional Commits、スコープ接頭辞など）と言語を推測し、WHY（意図）を含むメッセージを生成。
+
+## ステータスライン
+
+コンテキスト使用量、バーンレート、ETA などをリアルタイム表示するカスタムステータスライン。
+
+### 表示内容
+
+| 項目 | 説明 |
+|------|------|
+| モデル名 | 使用中のモデル |
+| コンテキスト | 使用量/上限 + プログレスバー + ゾーン表示 |
+| In/Out | 入力/出力トークン数 |
+| 残りトークン | コンテキスト残量 |
+| ETA | 残り使用可能時間の推定 |
+| 圧縮回数 | セッション内のコンテキスト圧縮検出回数 |
+| バーンレート | トークン消費速度 (tokens/min) |
+| Daily/Weekly/Monthly | 累積トークン使用量 |
+
+### セットアップ
+
+`install.sh` で自動的にシンボリックリンクが作成される。
+`~/.claude/settings.json` に以下の設定が必要:
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "cat | bash ~/.claude/statusline.sh"
+  }
+}
+```
 
 ## 学習する AI
 

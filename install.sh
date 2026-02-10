@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_DIR="$SCRIPT_DIR/skills"
 AGENTS_DIR="$SCRIPT_DIR/agents"
 WORKTREES_SH="$SCRIPT_DIR/claude-worktrees.sh"
+STATUSLINE_SH="$SCRIPT_DIR/status-line.sh"
 
 CLAUDE_SKILLS_DIR="$HOME/.claude/skills"
 CLAUDE_AGENTS_DIR="$HOME/.claude/agents"
@@ -88,6 +89,20 @@ install() {
     fi
     ln -s "$WORKTREES_SH" "$wt_target"
 
+    # statusline.sh のシンボリックリンク
+    echo "--- Status Line ---"
+    local sl_target="$HOME/.claude/statusline.sh"
+    if [ -L "$sl_target" ]; then
+        echo "[更新] statusline.sh"
+        rm "$sl_target"
+    elif [ -f "$sl_target" ]; then
+        echo "[バックアップ] 既存の ~/.claude/statusline.sh → ~/.claude/statusline.sh.bak"
+        mv "$sl_target" "${sl_target}.bak"
+    else
+        echo "[作成] statusline.sh"
+    fi
+    ln -s "$STATUSLINE_SH" "$sl_target"
+
     echo ""
     echo "=== 完了 ==="
     echo ""
@@ -132,6 +147,12 @@ uninstall() {
     if [ -L "$wt_target" ]; then
         echo "[削除] claude-worktrees.sh"
         rm "$wt_target"
+    fi
+
+    local sl_target="$HOME/.claude/statusline.sh"
+    if [ -L "$sl_target" ]; then
+        echo "[削除] statusline.sh"
+        rm "$sl_target"
     fi
 
     echo ""
@@ -184,6 +205,17 @@ status() {
         echo "  worktrees: 実ファイル (リンクではない)"
     else
         echo "  worktrees: 未インストール"
+    fi
+
+    echo ""
+    echo "--- Status Line ---"
+    local sl_target="$HOME/.claude/statusline.sh"
+    if [ -L "$sl_target" ]; then
+        echo "  statusline: $(readlink "$sl_target")"
+    elif [ -f "$sl_target" ]; then
+        echo "  statusline: 実ファイル (リンクではない)"
+    else
+        echo "  statusline: 未インストール"
     fi
 }
 
