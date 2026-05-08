@@ -15,8 +15,11 @@ When creating or modifying Skills (`SKILL.md`) or Agents (`agents/*.md`), you **
 ◆ SHOULD
 - Error messages — English, or English + Japanese bilingual
 
+⬛ MUST
+- `skills/*/README.md` — Create a Japanese user-facing explanation alongside every `SKILL.md`
+
 ○ NICE TO HAVE
-- `README.md` (user-facing) — Japanese is OK
+- `README.md` (project root, user-facing) — Japanese is OK
 
 ### Writing Style
 
@@ -51,6 +54,7 @@ Before finalizing any new or modified Skill/Agent, verify:
 - [ ] Content is well-structured (clear headings, sections, lists)
 - [ ] Priority levels use MoSCoW + shape notation (if applicable)
 - [ ] No Japanese remains in the file (except annotated domain-specific terms)
+- [ ] `skills/*/README.md` exists with Japanese user-facing explanation
 
 ## README Maintenance
 
