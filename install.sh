@@ -7,10 +7,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_DIR="$SCRIPT_DIR/skills"
 AGENTS_DIR="$SCRIPT_DIR/agents"
+SCRIPTS_DIR="$SCRIPT_DIR/scripts"
 STATUSLINE_SH="$SCRIPT_DIR/status-line.sh"
 
 CLAUDE_SKILLS_DIR="$HOME/.claude/skills"
 CLAUDE_AGENTS_DIR="$HOME/.claude/agents"
+LOCAL_BIN_DIR="$HOME/.local/bin"
 
 usage() {
     cat <<'USAGE'
@@ -89,6 +91,44 @@ install() {
     fi
     ln -s "$STATUSLINE_SH" "$sl_target"
 
+    # scripts/ のシンボリックリンク (~/.local/bin/ に配置、拡張子を除去したコマンド名)
+    if [ -d "$SCRIPTS_DIR" ]; then
+        echo "--- Scripts ---"
+        mkdir -p "$LOCAL_BIN_DIR"
+        for script_file in "$SCRIPTS_DIR"/*; do
+            [ -f "$script_file" ] || continue
+            [ -x "$script_file" ] || continue
+            local script_basename
+            script_basename="$(basename "$script_file")"
+            # README などのドキュメントは除外
+            case "$script_basename" in
+                README*|*.md) continue ;;
+            esac
+            # 拡張子を除去 (claude-bash-stats.py → claude-bash-stats)
+            local cmd_name="${script_basename%.*}"
+            local target="$LOCAL_BIN_DIR/$cmd_name"
+
+            if [ -L "$target" ]; then
+                echo "[更新] scripts/$cmd_name"
+                rm "$target"
+            elif [ -e "$target" ]; then
+                echo "[スキップ] scripts/$cmd_name (実ファイルが存在。手動で削除してください)"
+                continue
+            else
+                echo "[作成] scripts/$cmd_name"
+            fi
+
+            ln -s "$script_file" "$target"
+        done
+
+        # PATH チェック
+        case ":$PATH:" in
+            *":$LOCAL_BIN_DIR:"*) ;;
+            *) echo "[ヒント] $LOCAL_BIN_DIR が PATH にありません。~/.zshrc 等に追加してください:"
+               echo "         export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
+        esac
+    fi
+
     echo ""
     echo "=== 完了 ==="
 }
@@ -124,6 +164,24 @@ uninstall() {
     if [ -L "$sl_target" ]; then
         echo "[削除] statusline.sh"
         rm "$sl_target"
+    fi
+
+    if [ -d "$SCRIPTS_DIR" ]; then
+        for script_file in "$SCRIPTS_DIR"/*; do
+            [ -f "$script_file" ] || continue
+            local script_basename
+            script_basename="$(basename "$script_file")"
+            case "$script_basename" in
+                README*|*.md) continue ;;
+            esac
+            local cmd_name="${script_basename%.*}"
+            local target="$LOCAL_BIN_DIR/$cmd_name"
+
+            if [ -L "$target" ]; then
+                echo "[削除] scripts/$cmd_name"
+                rm "$target"
+            fi
+        done
     fi
 
     echo ""
@@ -176,6 +234,29 @@ status() {
         echo "  statusline: 実ファイル (リンクではない)"
     else
         echo "  statusline: 未インストール"
+    fi
+
+    if [ -d "$SCRIPTS_DIR" ]; then
+        echo ""
+        echo "--- Scripts ---"
+        for script_file in "$SCRIPTS_DIR"/*; do
+            [ -f "$script_file" ] || continue
+            local script_basename
+            script_basename="$(basename "$script_file")"
+            case "$script_basename" in
+                README*|*.md) continue ;;
+            esac
+            local cmd_name="${script_basename%.*}"
+            local target="$LOCAL_BIN_DIR/$cmd_name"
+
+            if [ -L "$target" ]; then
+                echo "  $cmd_name: $(readlink "$target")"
+            elif [ -e "$target" ]; then
+                echo "  $cmd_name: 実ファイル (リンクではない)"
+            else
+                echo "  $cmd_name: 未インストール"
+            fi
+        done
     fi
 }
 

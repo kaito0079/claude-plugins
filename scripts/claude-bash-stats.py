@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""
+Claude Code の transcript を横断して Bash ツール呼び出しの頻度を集計する。
+
+worktree を多用すると ~/.claude/projects/ 配下にプロジェクトディレクトリが
+分散するため、本スクリプトでは project dir 名の部分一致でフィルタした上で
+複数 worktree 分の transcript を 1 つの集計結果にまとめる。
+
+Examples:
+  # 全プロジェクトを集計
+  scripts/claude-bash-stats.py
+
+  # <repo-name> の全 worktree を横断集計
+  scripts/claude-bash-stats.py -f <repo-name>
+
+  # <repo-name> だけ、上位 50 件、settings.json で allow 済みも含めて表示
+  scripts/claude-bash-stats.py -f <repo-name> -n 50 --include-allowed
+
+  # ~/.claude/settings.json の allow に貼り付ける形式で出力
+  scripts/claude-bash-stats.py -f <repo-name> --format rules
+"""
+from __future__ import annotations
+
+import argparse
+import collections
+import json
+import os
+import re
+import shlex
+import sys
+from pathlib import Path
+
+PROJECTS_ROOT = Path.home() / ".claude" / "projects"
+SETTINGS_PATH = Path.home() / ".claude" / "settings.json"
+
+# 第1引数までで意味が確定する系のコマンド (git status, npm test など)
+TWO_TOKEN_COMMANDS = {
+    "git", "gh", "npm", "pnpm", "yarn", "bun", "deno",
+    "task", "make", "just", "docker", "docker-compose", "kubectl",
+    "aws", "gcloud", "terraform", "cargo", "go", "rustup",
+    "pip", "pip3", "python", "python3", "node", "tsx", "ts-node",
+    "brew", "apt", "rye", "uv", "poetry",
+}
+
+
+def extract_pattern(cmd: str) -> str | None:
+    """コマンド文字列から allow ルール候補となる先頭パターンを取り出す。"""
+    cmd = cmd.strip()
+    # 先頭の環境変数代入 (FOO=bar baz cmd) を剥がす
+    while True:
+        m = re.match(r"^[A-Za-z_][A-Za-z0-9_]*=\S*\s+", cmd)
+        if not m:
+            break
+        cmd = cmd[m.end():]
+    try:
+        tokens = shlex.split(cmd, posix=True)
+    except ValueError:
+        return None
+    if not tokens:
+        return None
+    base = os.path.basename(tokens[0])
+    if base in TWO_TOKEN_COMMANDS and len(tokens) > 1 and not tokens[1].startswith("-"):
+        return f"{base} {tokens[1]}"
+    return base
+
+
+def load_allowed_bash_rules(path: Path) -> list[re.Pattern[str]]:
+    """settings.json の allow から Bash(...) ルールを正規表現に変換して返す。"""
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    rules = (data.get("permissions") or {}).get("allow") or []
+    compiled: list[re.Pattern[str]] = []
+    for r in rules:
+        m = re.match(r"^Bash\((.+)\)$", r)
+        if not m:
+            continue
+        glob_pat = m.group(1).strip()
+        regex = "^" + re.escape(glob_pat).replace(r"\*", ".*") + "$"
+        compiled.append(re.compile(regex))
+    return compiled
+
+
+def is_already_allowed(pattern: str, rules: list[re.Pattern[str]]) -> bool:
+    # allow ルール側に "*" が付く前提で、pattern の末尾に空白を補って広めに判定
+    candidates = [pattern, pattern + " ", pattern + " *"]
+    return any(any(rx.match(c) for rx in rules) for c in candidates)
+
+
+def iter_bash_commands(jsonl: Path):
+    try:
+        with jsonl.open(encoding="utf-8") as f:
+            for line in f:
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if obj.get("type") != "assistant":
+                    continue
+                content = (obj.get("message") or {}).get("content") or []
+                if not isinstance(content, list):
+                    continue
+                for c in content:
+                    if not isinstance(c, dict):
+                        continue
+                    if c.get("type") == "tool_use" and c.get("name") == "Bash":
+                        cmd = (c.get("input") or {}).get("command")
+                        if isinstance(cmd, str) and cmd:
+                            yield cmd
+    except OSError:
+        return
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="Claude Code transcript の Bash 呼び出しを横断集計する",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
+    ap.add_argument(
+        "-f", "--filter", default="",
+        help="project dir 名の部分一致フィルタ (例: <repo-name>)。空なら全件",
+    )
+    ap.add_argument(
+        "-n", "--top", type=int, default=30,
+        help="表示件数 (default: 30)",
+    )
+    ap.add_argument(
+        "--include-allowed", action="store_true",
+        help="~/.claude/settings.json の allow で既にカバー済みのものも表示する",
+    )
+    ap.add_argument(
+        "--format", choices=("table", "rules", "json"), default="table",
+        help="出力形式: table (default) / rules (allow 用) / json",
+    )
+    ap.add_argument(
+        "--projects-root", type=Path, default=PROJECTS_ROOT,
+        help=f"集計対象ルート (default: {PROJECTS_ROOT})",
+    )
+    args = ap.parse_args()
+
+    root: Path = args.projects_root
+    if not root.exists():
+        print(f"projects dir not found: {root}", file=sys.stderr)
+        return 1
+
+    total_counter: collections.Counter[str] = collections.Counter()
+    sessions_per_pattern: dict[str, set[str]] = collections.defaultdict(set)
+    projects_per_pattern: dict[str, set[str]] = collections.defaultdict(set)
+    scanned_projects = 0
+    scanned_sessions = 0
+
+    for pdir in sorted(root.iterdir()):
+        if not pdir.is_dir():
+            continue
+        if args.filter and args.filter not in pdir.name:
+            continue
+        scanned_projects += 1
+        for jsonl in pdir.glob("*.jsonl"):
+            scanned_sessions += 1
+            sid = jsonl.stem
+            for cmd in iter_bash_commands(jsonl):
+                pat = extract_pattern(cmd)
+                if not pat:
+                    continue
+                total_counter[pat] += 1
+                sessions_per_pattern[pat].add(sid)
+                projects_per_pattern[pat].add(pdir.name)
+
+    allow_rules = load_allowed_bash_rules(SETTINGS_PATH)
+
+    rows = []
+    for pat, count in total_counter.most_common():
+        already = is_already_allowed(pat, allow_rules)
+        if already and not args.include_allowed:
+            continue
+        rows.append({
+            "pattern": pat,
+            "count": count,
+            "sessions": len(sessions_per_pattern[pat]),
+            "projects": len(projects_per_pattern[pat]),
+            "already_allowed": already,
+        })
+        if len(rows) >= args.top:
+            break
+
+    if args.format == "json":
+        print(json.dumps({
+            "scanned_projects": scanned_projects,
+            "scanned_sessions": scanned_sessions,
+            "filter": args.filter,
+            "rows": rows,
+        }, ensure_ascii=False, indent=2))
+        return 0
+
+    if args.format == "rules":
+        for r in rows:
+            mark = "  // already allowed" if r["already_allowed"] else ""
+            print(f'"Bash({r["pattern"]}*)",  // {r["count"]}x in {r["sessions"]} sessions{mark}')
+        return 0
+
+    # table
+    filt = args.filter or "<all>"
+    print(f"# scanned: filter={filt}  projects={scanned_projects}  sessions={scanned_sessions}")
+    print(f"{'count':>6} {'sess':>5} {'proj':>4}  pattern")
+    print("-" * 60)
+    for r in rows:
+        mark = " *" if r["already_allowed"] else ""
+        print(f"{r['count']:>6} {r['sessions']:>5} {r['projects']:>4}  {r['pattern']}{mark}")
+    if not args.include_allowed:
+        print()
+        print("(allow 済みは除外。--include-allowed で表示)")
+    else:
+        print()
+        print("(* = 既に ~/.claude/settings.json の allow に該当ルールあり)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -33,9 +33,11 @@ claude-tools/
 │   ├── techdebt/SKILL.md   /techdebt - 技術的負債検出
 │   ├── notes/SKILL.md      /notes  - ナレッジベース更新
 │   └── team-builder/SKILL.md  /team-builder - チーム並列実装
-└── agents/
-    ├── review.md           レビューエージェント
-    └── techdebt.md         技術的負債エージェント
+├── agents/
+│   ├── review.md           レビューエージェント
+│   └── techdebt.md         技術的負債エージェント
+└── scripts/                CLI 横断ユーティリティ (→ ~/.local/bin/)
+    └── claude-bash-stats.py  transcript の Bash 呼び出し集計
 ```
 
 ## スキル一覧
@@ -110,6 +112,27 @@ claude-tools/
 6. レビュー指摘をリーダーが修正 → クリーンアップ
 
 モデル戦略: adaptive（推奨）/ deep / fast / budget から選択可能。
+
+## ユーティリティスクリプト
+
+`scripts/` 以下の実行可能ファイルは `install.sh` で `~/.local/bin/` にシンボリックリンクされる（拡張子は除去）。
+
+### `claude-bash-stats`
+
+Claude Code の transcript (`~/.claude/projects/*/*.jsonl`) を横断スキャンし、Bash ツール呼び出しの頻度を集計する。worktree を多用するとプロジェクトディレクトリが分散するため、プロジェクト名フィルタで複数 worktree をまとめて集計できる。
+
+```bash
+# 全プロジェクト
+claude-bash-stats
+
+# 特定リポジトリだけ (worktree 横断)
+claude-bash-stats -f <repo-name>
+
+# settings.json の allow リスト貼り付け用
+claude-bash-stats -f <repo-name> --format rules
+```
+
+`~/.claude/settings.json` の allow ルールと突き合わせ、未登録のコマンドだけを表示する（`--include-allowed` で全件）。allow リスト整備の判断材料に使う想定。
 
 ## ステータスライン
 
