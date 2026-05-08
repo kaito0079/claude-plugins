@@ -1,6 +1,6 @@
 # claude-tools
 
-Claude Code のカスタムスキル、worktree マネージャー、ステータスライン。
+Claude Code のカスタムスキル、エージェント、ステータスライン。
 `install.sh` で symlink を張り、全プロジェクトから利用可能。
 
 ## インストール
@@ -9,8 +9,6 @@ Claude Code のカスタムスキル、worktree マネージャー、ステー�
 cd ~/private/claude-tools
 chmod +x install.sh
 ./install.sh
-echo 'source ~/.claude-worktrees.sh' >> ~/.zshrc
-source ~/.zshrc
 ```
 
 ## アンインストール
@@ -24,7 +22,6 @@ source ~/.zshrc
 ```
 claude-tools/
 ├── install.sh              symlink 作成/削除
-├── claude-worktrees.sh     worktree マネージャー (→ ~/.claude-worktrees.sh)
 ├── status-line.sh          ステータスライン (→ ~/.claude/statusline.sh)
 ├── CLAUDE.md               プロジェクトルール
 ├── README.md
@@ -59,52 +56,6 @@ claude-tools/
 |-------------|------|
 | review | 厳格なシニアエンジニアとして敵対的コードレビューを実施 |
 | techdebt | コードベースの技術的負債を検出しレポートを生成 |
-
-## Worktree マネージャー
-
-### プロジェクトごとの初回セットアップ
-
-```bash
-cd /path/to/project
-claude-worktree init        # worktree 作成 (.worktrees/wt-a, wt-b, wt-c)
-claude-worktree register    # zuse に登録
-```
-
-### 日常の使い方
-
-```bash
-zuse              # 登録済みプロジェクト一覧
-zuse my-project   # プロジェクト切り替え
-
-za / zb / zc      # worktree A/B/C に移動
-z0                # プロジェクトルートに戻る
-
-zswitch a feature/123  # worktree A のブランチ切り替え
-zinfo                  # 状態表示
-
-cdev / crev / cana     # 各 worktree で Claude Code 起動
-```
-
-### Tips
-
-**実装(za)とレビュー(zb)を並行するには？**
-
-zaだけfeatureブランチ、zbはmainのままでOK。
-Git worktreeは同じブランチを複数worktreeで同時にcheckoutできないため、別ブランチにするのが自然。
-
-```bash
-zswitch a feature/xxx   # zaで作業ブランチに切替
-# zaで実装 → コミット
-# zbからレビュー:
-git diff main..feature/xxx
-git log main..feature/xxx
-```
-
-zbでブランチを切り替えずに特定ファイルを見たい場合:
-
-```bash
-git show feature/xxx:path/to/file.ts
-```
 
 ## スキル詳細
 

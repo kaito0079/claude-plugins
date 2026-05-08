@@ -2,12 +2,11 @@
 set -euo pipefail
 
 # claude-tools インストーラー
-# シンボリックリンクを作成して ~/.claude/skills/, ~/.claude/agents/, ~/.claude-worktrees.sh を設定
+# シンボリックリンクを作成して ~/.claude/skills/, ~/.claude/agents/ を設定
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_DIR="$SCRIPT_DIR/skills"
 AGENTS_DIR="$SCRIPT_DIR/agents"
-WORKTREES_SH="$SCRIPT_DIR/claude-worktrees.sh"
 STATUSLINE_SH="$SCRIPT_DIR/status-line.sh"
 
 CLAUDE_SKILLS_DIR="$HOME/.claude/skills"
@@ -76,19 +75,6 @@ install() {
         ln -s "$agent_file" "$target"
     done
 
-    # claude-worktrees.sh のシンボリックリンク
-    local wt_target="$HOME/.claude-worktrees.sh"
-    if [ -L "$wt_target" ]; then
-        echo "[更新] claude-worktrees.sh"
-        rm "$wt_target"
-    elif [ -f "$wt_target" ]; then
-        echo "[バックアップ] 既存の ~/.claude-worktrees.sh → ~/.claude-worktrees.sh.bak"
-        mv "$wt_target" "${wt_target}.bak"
-    else
-        echo "[作成] claude-worktrees.sh"
-    fi
-    ln -s "$WORKTREES_SH" "$wt_target"
-
     # statusline.sh のシンボリックリンク
     echo "--- Status Line ---"
     local sl_target="$HOME/.claude/statusline.sh"
@@ -105,15 +91,6 @@ install() {
 
     echo ""
     echo "=== 完了 ==="
-    echo ""
-
-    # ~/.zshrc に source があるか確認
-    if grep -q 'claude-worktrees.sh' "$HOME/.zshrc" 2>/dev/null; then
-        echo "~/.zshrc に source 済み"
-    else
-        echo "以下を ~/.zshrc に追加してください:"
-        echo "  source ~/.claude-worktrees.sh"
-    fi
 }
 
 uninstall() {
@@ -142,12 +119,6 @@ uninstall() {
             rm "$target"
         fi
     done
-
-    local wt_target="$HOME/.claude-worktrees.sh"
-    if [ -L "$wt_target" ]; then
-        echo "[削除] claude-worktrees.sh"
-        rm "$wt_target"
-    fi
 
     local sl_target="$HOME/.claude/statusline.sh"
     if [ -L "$sl_target" ]; then
@@ -195,17 +166,6 @@ status() {
             echo "  $name: 未インストール"
         fi
     done
-
-    echo ""
-    echo "--- Worktrees ---"
-    local wt_target="$HOME/.claude-worktrees.sh"
-    if [ -L "$wt_target" ]; then
-        echo "  worktrees: $(readlink "$wt_target")"
-    elif [ -f "$wt_target" ]; then
-        echo "  worktrees: 実ファイル (リンクではない)"
-    else
-        echo "  worktrees: 未インストール"
-    fi
 
     echo ""
     echo "--- Status Line ---"
