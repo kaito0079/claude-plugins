@@ -24,6 +24,17 @@ remaining_tokens=$((context_size - current_used))
 [ "$remaining_tokens" -lt 0 ] && remaining_tokens=0
 current_time=$(date +%s)
 
+# Current directory & git branch
+cwd=$(echo "$input" | jq -r '.cwd // ""')
+if [ -z "$cwd" ] || [ "$cwd" = "null" ]; then
+  cwd=$(pwd)
+fi
+short_cwd=$(basename "$cwd")
+git_branch=""
+if [ -d "$cwd/.git" ] || git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
+  git_branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null || git -C "$cwd" rev-parse --short HEAD 2>/dev/null || echo "")
+fi
+
 # Format number with k/M suffix
 fmt() {
   local n=$1
@@ -159,7 +170,15 @@ fi
 # Output (2 lines)
 # Line 1: Session context status
 # Line 2: Burn rate + Usage history
-printf "🤖 %s │ 📊 %s/%s %s %d%% %s │ ⬇%s ⬆%s │ 💡残%s │ ⏳~%s │ 🔄%d回\n🔥 %s │ 🕐 Daily:%s  🗓 Weekly:%s  📊 Monthly:%s" \
+# Build dir+branch label
+if [ -n "$git_branch" ]; then
+  dir_label="📁 $short_cwd (🌿 $git_branch)"
+else
+  dir_label="📁 $short_cwd"
+fi
+
+printf "%s │ 🤖 %s\n📊 %s/%s %s %d%% %s │ ⬇%s ⬆%s │ 💡残%s │ ⏳~%s │ 🔄%d回\n🔥 %s │ 🕐 Daily:%s  🗓 Weekly:%s  📊 Monthly:%s" \
+  "$dir_label" \
   "$model" \
   "$(fmt $current_used)" \
   "$(fmt $context_size)" \
