@@ -31,7 +31,8 @@ claude-tools/
 │   ├── plan/SKILL.md       /plan   - 80/20 計画モード
 │   ├── review/SKILL.md     /review - 敵対的コードレビュー
 │   ├── techdebt/SKILL.md   /techdebt - 技術的負債検出
-│   └── notes/SKILL.md      /notes  - ナレッジベース更新
+│   ├── notes/SKILL.md      /notes  - ナレッジベース更新
+│   └── team-builder/SKILL.md  /team-builder - チーム並列実装
 └── agents/
     ├── review.md           レビューエージェント
     └── techdebt.md         技術的負債エージェント
@@ -45,6 +46,7 @@ claude-tools/
 | review | `/review` | PR作成前。5パスで厳格レビュー |
 | techdebt | `/techdebt` | セッション終了時。負債を検出しレポート |
 | notes | `/notes` | 発見があった時。.claude/notes/ に記録 |
+| team-builder | `/team-builder` | 設計書やタスクから並列実装チームを構築。ドメイン分割＋レビュー |
 
 ## エージェント一覧
 
@@ -91,6 +93,23 @@ claude-tools/
 ```
 
 `.claude/notes/` にトピック別に記録。README.md のインデックスも更新。
+
+### `/team-builder` - チーム並列実装
+
+```
+/team-builder
+```
+
+設計書やタスクリストに基づきエージェントチームを構築し、並列実装とコードレビューを実施。
+
+1. タスク分析・分割（技術ドメイン / 独立性 / ファイル所有権）
+2. チーム構成決定（リーダー + 実装担当 × N + レビュワー）
+3. タスク登録・依存関係設定
+4. 実装エージェント並列起動
+5. 進捗管理 → 全実装完了後にレビュワー起動
+6. レビュー指摘をリーダーが修正 → クリーンアップ
+
+モデル戦略: adaptive（推奨）/ deep / fast / budget から選択可能。
 
 ## ステータスライン
 
