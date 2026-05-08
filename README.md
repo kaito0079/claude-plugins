@@ -28,7 +28,6 @@ claude-tools/
 ├── docs/
 │   └── authoring-guide.md  スキル/エージェント作成ガイド
 ├── skills/
-│   ├── plan/SKILL.md       /plan   - 80/20 計画モード
 │   ├── review/SKILL.md     /review - 敵対的コードレビュー
 │   ├── techdebt/SKILL.md   /techdebt - 技術的負債検出
 │   ├── notes/SKILL.md      /notes  - ナレッジベース更新
@@ -44,7 +43,6 @@ claude-tools/
 
 | スキル | 呼び出し | タイミング |
 |--------|---------|-----------|
-| plan | `/plan` | 実装開始前。設計ドキュメント承認後に実装 |
 | review | `/review` | PR作成前。5パスで厳格レビュー |
 | techdebt | `/techdebt` | セッション終了時。負債を検出しレポート |
 | notes | `/notes` | 発見があった時。.claude/notes/ に記録 |
@@ -60,14 +58,6 @@ claude-tools/
 | techdebt | コードベースの技術的負債を検出しレポートを生成 |
 
 ## スキル詳細
-
-### `/plan` - 計画モード
-
-```
-/plan ユーザー削除機能を追加したい
-```
-
-1. 問題分析 → 2. アプローチ検討（2案以上）→ 3. 設計ドキュメント → 4. 承認待ち → 5. 実装
 
 ### `/review` - 敵対的レビュー
 
