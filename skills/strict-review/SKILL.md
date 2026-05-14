@@ -1,5 +1,5 @@
 ---
-name: review
+name: strict-review
 description: Conducts an adversarial code review as a strict senior engineer. Identifies issues across security, performance, testing, and design. Does not approve until all issues are resolved.
 ---
 
