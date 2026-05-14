@@ -7,10 +7,10 @@ When creating or modifying Skills (`SKILL.md`) or Agents (`agents/*.md`), you **
 ### Language Rules
 
 ⬛ MUST
-- `SKILL.md` — Write in English
-- `agents/*.md` — Write in English (frontmatter + system prompt)
-- `references/*.md` — Write in English
-- Script comments and docstrings — Write in English
+- `SKILL.md` — Japanese or English (pick one and stay consistent within a file)
+- `agents/*.md` — Japanese or English (frontmatter + system prompt, consistent within a file)
+- `references/*.md` — Japanese or English
+- Script comments and docstrings — English (technical artifacts shared with non-Japanese readers)
 
 ◆ SHOULD
 - Error messages — English, or English + Japanese bilingual
@@ -24,7 +24,7 @@ When creating or modifying Skills (`SKILL.md`) or Agents (`agents/*.md`), you **
 ### Writing Style
 
 ⬛ MUST
-- Use grammatically correct, complete English sentences
+- Use grammatically correct, complete sentences (in whichever language the file is written in)
 - Structure content with clear sections, headings, bullet points, and tables
 - Include a specific suggested action for every finding or recommendation
 
@@ -48,12 +48,10 @@ Do NOT use color-only emoji (🔴🟡🟢) or symbols without text labels.
 
 Before finalizing any new or modified Skill/Agent, verify:
 
-- [ ] `SKILL.md` / Agent `.md` is written entirely in English
-- [ ] YAML frontmatter `description` is in English
+- [ ] `SKILL.md` / Agent `.md` uses Japanese or English consistently (no mid-file language mixing)
 - [ ] Body text uses grammatically correct, complete sentences
 - [ ] Content is well-structured (clear headings, sections, lists)
 - [ ] Priority levels use MoSCoW + shape notation (if applicable)
-- [ ] No Japanese remains in the file (except annotated domain-specific terms)
 - [ ] `skills/*/README.md` exists with Japanese user-facing explanation
 
 ## README Maintenance

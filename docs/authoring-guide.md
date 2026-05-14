@@ -2,28 +2,28 @@
 
 ## Language Rules
 
-**CRITICAL: All Claude Skills and Agent definitions MUST be written in English.**
-
-### Rationale
-1. **Claude's primary training language**: English
-2. **Token efficiency**: Claude processes English more efficiently than Japanese
-3. **Translation direction**: Claude excels at "to English" translation (56.9% advantage), struggles with "from English" (9.65%)
-4. **International sharing**: Skills can be shared globally
-5. **Maintenance**: Easier to maintain and update
+**Skills and Agents may be authored in either Japanese or English. Pick one per file and stay consistent.**
 
 ### Scope
-- `SKILL.md`: **Must be English**
-- `agents/*.md`: **Must be English** (frontmatter + system prompt)
-- `scripts/*.py`: Comments and docstrings in English
-- `references/*.md`: **Must be English**
+- `SKILL.md`: Japanese or English (consistent within file)
+- `agents/*.md`: Japanese or English (frontmatter + system prompt, consistent within file)
+- `scripts/*.py`: Comments and docstrings in **English** (technical artifacts)
+- `references/*.md`: Japanese or English
 - Error messages: English (or English + Japanese bilingual)
-- `README.md` (user-facing): Japanese is OK
+- `README.md` (user-facing): Japanese
+
+### Tradeoffs to consider when choosing a language
+
+Either language works at runtime — Claude reads `description` to decide skill invocation and handles Japanese and English with comparable accuracy. Differences worth knowing:
+
+- **Token usage**: Japanese is slightly denser in tokens per character, but for short fields like `description` the difference is negligible.
+- **Translation direction (older studies)**: Claude historically performed better when translating *to* English than *from* it. For modern Claude versions and for non-translation tasks (instruction following, classification), this gap has largely closed.
+- **Audience**: If a skill might be shared with non-Japanese readers, English is more portable. For personal/internal tooling, Japanese is fine and improves Japanese-speaking author's ability to scan and maintain the file.
+- **Mixing**: Don't mix mid-file. A `description` in Japanese with English body is OK as long as each section is internally consistent.
 
 ### Exceptions
 - Japan-specific domain knowledge (e.g., Japanese tax regulations)
-  → Write in English, with Japanese technical terms annotated where necessary
-- User-facing documentation
-  → Japanese is OK (but SKILL.md and Agent .md must be English)
+  → Japanese is preferable to preserve domain terms; annotate English equivalents where useful.
 
 ## Priority Notation Guidelines
 
@@ -86,11 +86,11 @@ Reason: Meaningless to screen readers
 ## Quality Checklist
 
 After creating a Skill or Agent, verify the following:
-- [ ] SKILL.md is written in English
-- [ ] Agent .md is written in English (frontmatter + system prompt)
-- [ ] references/*.md are written in English
+- [ ] SKILL.md uses Japanese or English consistently
+- [ ] Agent .md uses Japanese or English consistently (frontmatter + system prompt)
+- [ ] references/*.md uses Japanese or English consistently
 - [ ] Script comments and docstrings are in English
-- [ ] Grammatically correct, complete English sentences
+- [ ] Grammatically correct, complete sentences in the chosen language
 - [ ] Well-structured (clear sections, bullet points, tables)
 
 ## References
@@ -140,8 +140,8 @@ After creating a Skill or Agent, verify the following:
 
 ## Summary
 
-**Why English?**
-1. Claude's primary training language
-2. 56.9% better performance when translating TO English
-3. Better token efficiency with proper English structure
-4. International compatibility
+**Choosing a language**
+- Both Japanese and English work; pick what is easier for the file's primary audience to read and maintain.
+- Author-facing readability (`description` shown in the skill picker) is often the dominant factor — if scanning English descriptions is slow, write them in Japanese.
+- For broadly-shared or open-sourced skills, prefer English for portability.
+- Within a single file, do not mix languages by sentence; sectional consistency is required.

@@ -1,6 +1,6 @@
 ---
 name: learn-from-insights
-description: Aggregate the per-session facets produced by Claude Code's built-in `/insights` command across the entire session history, cluster recurring friction patterns, and propose updates to project `CLAUDE.md`, project `.claude/notes/`, or user memory.
+description: Claude Code 標準の `/insights` がセッションごとに出力する facets を全履歴横断で集計し、繰り返し現れる friction パターンをクラスタリングして、プロジェクト `CLAUDE.md` / `.claude/notes/` / ユーザーメモリへの追加候補を提案する。
 ---
 
 # Learn From Insights

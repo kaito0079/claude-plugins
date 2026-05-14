@@ -1,6 +1,6 @@
 ---
 name: strict-review
-description: Conducts an adversarial code review as a strict senior engineer. Identifies issues across security, performance, testing, and design. Does not approve until all issues are resolved.
+description: 厳格なシニアエンジニアとして敵対的なコードレビューを実施する。セキュリティ・パフォーマンス・テスト・設計の観点で問題を検出し、すべて解決されるまで承認しない。
 tools: Read, Grep, Glob, Bash
 model: sonnet
 skills:

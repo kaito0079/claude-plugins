@@ -1,6 +1,6 @@
 ---
 name: techdebt
-description: Detects technical debt in the codebase and generates a report. Identifies code duplication, code smells, unused imports, and overly complex functions.
+description: コードベースの技術的負債を検出してレポートを生成する。コードの重複、コードスメル、未使用 import、過度に複雑な関数を特定する。
 tools: Read, Grep, Glob, Bash
 model: sonnet
 skills:

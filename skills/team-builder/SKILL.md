@@ -1,6 +1,6 @@
 ---
 name: team-builder
-description: Builds agent teams for parallel implementation and review based on design docs or task lists. Splits work by technical domain, manages dependencies, and coordinates quality assurance.
+description: 設計書やタスクリストを元に、並列実装とレビュー用のエージェントチームを構築する。技術ドメインで作業を分割し、依存関係を管理し、品質保証を調整する。
 ---
 
 # Team-Based Parallel Implementation
