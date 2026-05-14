@@ -8,10 +8,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_DIR="$SCRIPT_DIR/skills"
 AGENTS_DIR="$SCRIPT_DIR/agents"
 SCRIPTS_DIR="$SCRIPT_DIR/scripts"
+HOOKS_DIR="$SCRIPT_DIR/hooks"
 STATUSLINE_SH="$SCRIPT_DIR/status-line.sh"
 
 CLAUDE_SKILLS_DIR="$HOME/.claude/skills"
 CLAUDE_AGENTS_DIR="$HOME/.claude/agents"
+CLAUDE_HOOKS_DIR="$HOME/.claude/hooks"
+CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 LOCAL_BIN_DIR="$HOME/.local/bin"
 
 usage() {
@@ -19,10 +22,12 @@ usage() {
 claude-tools インストーラー
 
 使用方法:
-  install.sh              シンボリックリンクを作成
-  install.sh --uninstall  シンボリックリンクを削除
-  install.sh --status     現在の状態を表示
-  install.sh -h|--help    ヘルプを表示
+  install.sh                  シンボリックリンクを作成
+  install.sh --enable-hooks   ~/.claude/settings.json に自動改善 hook を登録
+  install.sh --disable-hooks  上記 hook を settings.json から削除
+  install.sh --uninstall      シンボリックリンクを削除
+  install.sh --status         現在の状態を表示
+  install.sh -h|--help        ヘルプを表示
 USAGE
 }
 
@@ -76,6 +81,31 @@ install() {
 
         ln -s "$agent_file" "$target"
     done
+
+    # フックスクリプトのシンボリックリンク
+    if [ -d "$HOOKS_DIR" ]; then
+        echo "--- Hooks ---"
+        mkdir -p "$CLAUDE_HOOKS_DIR"
+        for hook_file in "$HOOKS_DIR"/*.py; do
+            [ -f "$hook_file" ] || continue
+            local hook_name
+            hook_name="$(basename "$hook_file")"
+            local target="$CLAUDE_HOOKS_DIR/$hook_name"
+
+            if [ -L "$target" ]; then
+                echo "[更新] hooks/$hook_name"
+                rm "$target"
+            elif [ -f "$target" ]; then
+                echo "[スキップ] hooks/$hook_name (実ファイルが存在。手動で削除してください)"
+                continue
+            else
+                echo "[作成] hooks/$hook_name"
+            fi
+
+            ln -s "$hook_file" "$target"
+        done
+        echo "[ヒント] settings.json への hook 登録は './install.sh --enable-hooks' で実行可能"
+    fi
 
     # statusline.sh のシンボリックリンク
     echo "--- Status Line ---"
@@ -133,8 +163,101 @@ install() {
     echo "=== 完了 ==="
 }
 
+enable_hooks() {
+    echo "=== auto-improvement hook 登録 ==="
+    if [ ! -f "$CLAUDE_SETTINGS" ]; then
+        echo "[作成] $CLAUDE_SETTINGS"
+        echo "{}" > "$CLAUDE_SETTINGS"
+    fi
+
+    local backup="${CLAUDE_SETTINGS}.bak.$(date +%Y%m%d-%H%M%S)"
+    cp "$CLAUDE_SETTINGS" "$backup"
+    echo "[バックアップ] $backup"
+
+    SETTINGS="$CLAUDE_SETTINGS" python3 - <<'PY'
+import json, os, sys, pathlib
+path = pathlib.Path(os.environ["SETTINGS"])
+data = json.loads(path.read_text() or "{}")
+hooks = data.setdefault("hooks", {})
+
+def ensure_matcher(event_name, command):
+    arr = hooks.setdefault(event_name, [])
+    for grp in arr:
+        for h in grp.get("hooks", []):
+            if h.get("type") == "command" and h.get("command") == command:
+                return False
+    arr.append({"hooks": [{"type": "command", "command": command}]})
+    return True
+
+added = []
+if ensure_matcher("Stop", "python3 ~/.claude/hooks/session_end_transcript_mirror.py"):
+    added.append("Stop -> session_end_transcript_mirror.py")
+
+path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+if added:
+    print("[追加] " + "\n[追加] ".join(added))
+else:
+    print("[既存] hook は既に登録済み")
+PY
+    echo "=== 完了 ==="
+}
+
+disable_hooks() {
+    echo "=== auto-improvement hook 削除 ==="
+    if [ ! -f "$CLAUDE_SETTINGS" ]; then
+        echo "settings.json なし"
+        return
+    fi
+    local backup="${CLAUDE_SETTINGS}.bak.$(date +%Y%m%d-%H%M%S)"
+    cp "$CLAUDE_SETTINGS" "$backup"
+    echo "[バックアップ] $backup"
+
+    SETTINGS="$CLAUDE_SETTINGS" python3 - <<'PY'
+import json, os, pathlib
+path = pathlib.Path(os.environ["SETTINGS"])
+data = json.loads(path.read_text() or "{}")
+hooks = data.get("hooks", {})
+removed = []
+for event, command in [
+    ("Stop", "python3 ~/.claude/hooks/session_end_transcript_mirror.py"),
+]:
+    arr = hooks.get(event, [])
+    new = []
+    for grp in arr:
+        kept = [h for h in grp.get("hooks", []) if not (h.get("type") == "command" and h.get("command") == command)]
+        if kept:
+            grp["hooks"] = kept
+            new.append(grp)
+        else:
+            removed.append(f"{event} -> {command.split('/')[-1]}")
+    if new:
+        hooks[event] = new
+    elif event in hooks:
+        del hooks[event]
+data["hooks"] = hooks
+if not data["hooks"]:
+    del data["hooks"]
+path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
+print("[削除] " + ", ".join(removed) if removed else "[該当なし]")
+PY
+    echo "=== 完了 ==="
+}
+
 uninstall() {
     echo "=== claude-tools アンインストール ==="
+
+    if [ -d "$CLAUDE_HOOKS_DIR" ]; then
+        for hook_file in "$HOOKS_DIR"/*.py; do
+            [ -f "$hook_file" ] || continue
+            local hook_name
+            hook_name="$(basename "$hook_file")"
+            local target="$CLAUDE_HOOKS_DIR/$hook_name"
+            if [ -L "$target" ]; then
+                echo "[削除] hooks/$hook_name"
+                rm "$target"
+            fi
+        done
+    fi
 
     for skill_dir in "$SKILLS_DIR"/*/; do
         [ -d "$skill_dir" ] || continue
@@ -225,6 +348,40 @@ status() {
         fi
     done
 
+    if [ -d "$HOOKS_DIR" ]; then
+        echo ""
+        echo "--- Hooks ---"
+        for hook_file in "$HOOKS_DIR"/*.py; do
+            [ -f "$hook_file" ] || continue
+            local hook_name
+            hook_name="$(basename "$hook_file")"
+            local target="$CLAUDE_HOOKS_DIR/$hook_name"
+
+            if [ -L "$target" ]; then
+                echo "  $hook_name: $(readlink "$target")"
+            elif [ -f "$target" ]; then
+                echo "  $hook_name: 実ファイル (リンクではない)"
+            else
+                echo "  $hook_name: 未インストール"
+            fi
+        done
+        if [ -f "$CLAUDE_SETTINGS" ]; then
+            local hook_count
+            hook_count=$(SETTINGS="$CLAUDE_SETTINGS" python3 -c "
+import json,os
+d=json.loads(open(os.environ['SETTINGS']).read() or '{}')
+n=0
+for ev,arr in (d.get('hooks') or {}).items():
+    for g in arr:
+        for h in g.get('hooks',[]):
+            cmd=h.get('command','')
+            if 'session_end_transcript_mirror.py' in cmd:
+                n+=1
+print(n)" 2>/dev/null || echo 0)
+            echo "  (settings.json 登録済み: $hook_count 件)"
+        fi
+    fi
+
     echo ""
     echo "--- Status Line ---"
     local sl_target="$HOME/.claude/statusline.sh"
@@ -261,9 +418,11 @@ status() {
 }
 
 case "${1:-}" in
-    --uninstall) uninstall ;;
-    --status)    status ;;
-    -h|--help)   usage ;;
-    "")          install ;;
-    *)           echo "不明なオプション: $1"; usage; exit 1 ;;
+    --uninstall)      uninstall ;;
+    --enable-hooks)   enable_hooks ;;
+    --disable-hooks)  disable_hooks ;;
+    --status)         status ;;
+    -h|--help)        usage ;;
+    "")               install ;;
+    *)                echo "不明なオプション: $1"; usage; exit 1 ;;
 esac

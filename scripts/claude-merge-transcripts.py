@@ -1,0 +1,216 @@
+#!/usr/bin/env python3
+"""One-shot backfill: consolidate worktree-scoped transcripts into the main worktree's project dir.
+
+Claude Code stores transcripts under `~/.claude/projects/<encoded-cwd>/<session>.jsonl`.
+Because git worktrees produce distinct cwds, the same repository's history ends up
+scattered across multiple project dirs. The `session_end_transcript_mirror.py` hook
+keeps things in sync for *new* sessions, but pre-existing transcripts need a manual
+pass — that's what this script does.
+
+For a given repository filter, the script:
+  1. Finds all `~/.claude/projects/*` dirs whose name contains the filter.
+  2. Auto-detects which of them is the main worktree's project dir by reading one
+     jsonl entry's `cwd`, running `git worktree list`, and matching back. The
+     `--target-cwd` flag overrides this when auto-detection cannot succeed
+     (e.g., the recorded cwd no longer exists on disk).
+  3. Copies every jsonl from non-main project dirs into the main dir, skipping
+     files whose target is already newer-or-equal (mtime-based, same heuristic
+     as the Stop hook).
+
+Examples:
+    # Dry-run for <repo-name> (preview only, nothing is written)
+    claude-merge-transcripts -f <repo-name> --dry-run
+
+    # Real backfill for <repo-name>
+    claude-merge-transcripts -f <repo-name>
+
+    # Explicit target cwd when auto-detection fails
+    claude-merge-transcripts -f <repo-name> --target-cwd /Users/me/work/<repo-name>
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import pathlib
+import shutil
+import subprocess
+import sys
+import tempfile
+
+PROJECTS_ROOT = pathlib.Path.home() / ".claude" / "projects"
+
+
+def encode_cwd(path: str) -> str:
+    """Match Claude Code's project-dir encoding (replace `/` and `.` with `-`)."""
+    return path.replace("/", "-").replace(".", "-")
+
+
+def read_first_cwd(jsonl: pathlib.Path) -> str | None:
+    """Return the cwd recorded in the first jsonl line, or None."""
+    try:
+        with jsonl.open(encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except Exception:
+                    continue
+                cwd = obj.get("cwd")
+                if isinstance(cwd, str) and cwd:
+                    return cwd
+                return None
+    except OSError:
+        pass
+    return None
+
+
+def main_worktree_for(cwd: str) -> str | None:
+    """Return the main worktree absolute path for the repo containing `cwd`."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", cwd, "worktree", "list", "--porcelain"],
+            capture_output=True, text=True, timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if out.returncode != 0:
+        return None
+    for line in out.stdout.splitlines():
+        if line.startswith("worktree "):
+            return line[len("worktree "):].strip() or None
+    return None
+
+
+def detect_main_project_dir(filter_substr: str) -> tuple[pathlib.Path, str] | None:
+    """Find the main worktree's project dir by probing matched candidates."""
+    for pdir in sorted(PROJECTS_ROOT.iterdir()):
+        if not pdir.is_dir() or filter_substr not in pdir.name:
+            continue
+        for jsonl in sorted(pdir.glob("*.jsonl")):
+            cwd = read_first_cwd(jsonl)
+            if not cwd or not os.path.isdir(cwd):
+                continue
+            main = main_worktree_for(cwd)
+            if not main:
+                continue
+            main_pdir = PROJECTS_ROOT / encode_cwd(main)
+            return main_pdir, main
+    return None
+
+
+def copy_one(src: pathlib.Path, dst: pathlib.Path, dry_run: bool) -> str:
+    """Copy src to dst (atomic + mtime-aware). Returns one of: 'copied', 'skip', 'error'."""
+    try:
+        src_mtime = src.stat().st_mtime
+    except OSError:
+        return "error"
+    if dst.exists():
+        try:
+            if dst.stat().st_mtime >= src_mtime:
+                return "skip"
+        except OSError:
+            pass
+    if dry_run:
+        return "copied"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(
+        prefix=f".{dst.name}.", suffix=".tmp", dir=str(dst.parent)
+    )
+    os.close(fd)
+    try:
+        shutil.copy2(src, tmp_path)
+        os.replace(tmp_path, dst)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        return "error"
+    return "copied"
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="Backfill: consolidate worktree transcripts into the main worktree's project dir.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
+    ap.add_argument(
+        "-f", "--filter", required=True,
+        help="Substring match against project dir name (e.g., '<repo-name>').",
+    )
+    ap.add_argument(
+        "--target-cwd",
+        help=(
+            "Absolute path to the main worktree. Bypasses auto-detection when "
+            "the recorded cwd of every candidate no longer exists on disk."
+        ),
+    )
+    ap.add_argument(
+        "--dry-run", action="store_true",
+        help="List what would be copied without writing.",
+    )
+    args = ap.parse_args()
+
+    if not PROJECTS_ROOT.exists():
+        print(f"projects dir not found: {PROJECTS_ROOT}", file=sys.stderr)
+        return 1
+
+    if args.target_cwd:
+        target_cwd = os.path.abspath(args.target_cwd)
+        target_pdir = PROJECTS_ROOT / encode_cwd(target_cwd)
+    else:
+        detected = detect_main_project_dir(args.filter)
+        if not detected:
+            print(
+                f"Could not auto-detect the main worktree for filter '{args.filter}'.\n"
+                "Pass --target-cwd <abs-path-to-main-worktree> explicitly.",
+                file=sys.stderr,
+            )
+            return 2
+        target_pdir, target_cwd = detected
+
+    print(f"# Target: {target_pdir.name}")
+    print(f"#         (main worktree: {target_cwd})")
+    print(f"# Filter: '{args.filter}'")
+    if args.dry_run:
+        print("# (dry-run — no files will be written)")
+    print()
+
+    counters = {"copied": 0, "skip": 0, "error": 0}
+    sources_seen = 0
+
+    for pdir in sorted(PROJECTS_ROOT.iterdir()):
+        if not pdir.is_dir() or args.filter not in pdir.name:
+            continue
+        if pdir.resolve() == target_pdir.resolve():
+            continue
+        sources_seen += 1
+        per_dir = {"copied": 0, "skip": 0, "error": 0}
+        for jsonl in sorted(pdir.glob("*.jsonl")):
+            dst = target_pdir / jsonl.name
+            result = copy_one(jsonl, dst, args.dry_run)
+            counters[result] += 1
+            per_dir[result] += 1
+        total = sum(per_dir.values())
+        print(
+            f"  {pdir.name}\n"
+            f"    files={total}  copied={per_dir['copied']}  "
+            f"skip={per_dir['skip']}  error={per_dir['error']}"
+        )
+
+    print()
+    print(
+        f"# Source dirs: {sources_seen}  "
+        f"copied={counters['copied']}  skip={counters['skip']}  error={counters['error']}"
+    )
+    if args.dry_run:
+        print("# Run without --dry-run to apply.")
+    return 0 if counters["error"] == 0 else 3
+
+
+if __name__ == "__main__":
+    sys.exit(main())
