@@ -1,196 +1,96 @@
 #!/bin/bash
-# Claude Code Enhanced Status Line
-# Model | Context | In/Out | Remaining | ETA | Compression | Burn Rate | D/W/M
+# Claude Code Status Line (2 行)
+#   📁 dir (🌿 branch) │ 🤖 Model
+#   ⏳5h ▓▓▓▓░░░░░░ 42% │ 📅週 ▓▓░░░░░░░░ 23%
+# レート制限 (5h/週) は常時表示。色 = ペース比較:
+#   緑 = 経過時間ベースの期待ペースより余裕 (まだ使える)
+#   黄 = ペース超過 (このペースだとリセット前に枯渇)
+#   赤 = ペース超過かつ残りわずか (使用率 RATE_RED_THRESHOLD% 以上)
+#   resets_at が取れないときは無色
+# コンテキスト使用率は 80% 以上のときだけ 2 行目に追加: 🧠 ████████░░ 84%
 
-CLAUDE_DIR="$HOME/.claude"
-SESSION_FILE="$CLAUDE_DIR/.sl_session.json"
-LAST_STATE_FILE="$CLAUDE_DIR/.sl_last_state.json"
-USAGE_LOG="$CLAUDE_DIR/.sl_usage_log.csv"
-COMPRESS_FILE="$CLAUDE_DIR/.sl_compress.json"
+THRESHOLD=80
+RATE_RED_THRESHOLD=80
+GREEN=$'\033[32m'
+YELLOW=$'\033[33m'
+RED=$'\033[31m'
+RESET=$'\033[0m'
 
 input=$(cat)
 
-# Extract data
 model=$(echo "$input" | jq -r '.model.display_name // "Unknown"')
-total_input=$(echo "$input" | jq -r '.context_window.total_input_tokens // 0')
-total_output=$(echo "$input" | jq -r '.context_window.total_output_tokens // 0')
-context_size=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
-used_pct=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
-session_id=$(echo "$input" | jq -r '.session_id // "unknown"')
-
-used_tokens=$((total_input + total_output))
-current_used=$(awk "BEGIN {printf \"%.0f\", ($used_pct * $context_size) / 100}")
-remaining_tokens=$((context_size - current_used))
-[ "$remaining_tokens" -lt 0 ] && remaining_tokens=0
-current_time=$(date +%s)
-
-# Current directory & git branch
-cwd=$(echo "$input" | jq -r '.cwd // ""')
+cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // ""')
 if [ -z "$cwd" ] || [ "$cwd" = "null" ]; then
   cwd=$(pwd)
 fi
 short_cwd=$(basename "$cwd")
+
 git_branch=""
-if [ -d "$cwd/.git" ] || git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
+if git -C "$cwd" rev-parse --git-dir >/dev/null 2>&1; then
   git_branch=$(git -C "$cwd" symbolic-ref --short HEAD 2>/dev/null || git -C "$cwd" rev-parse --short HEAD 2>/dev/null || echo "")
 fi
 
-# Format number with k/M suffix
-fmt() {
-  local n=$1
-  if [ "$n" -ge 1000000 ] 2>/dev/null; then
-    awk "BEGIN {printf \"%.1fM\", $n/1000000}"
-  elif [ "$n" -ge 1000 ] 2>/dev/null; then
-    awk "BEGIN {printf \"%.1fk\", $n/1000}"
-  else
-    echo "${n:-0}"
-  fi
+if [ -n "$git_branch" ]; then
+  line1="📁 $short_cwd (🌿 $git_branch) │ 🤖 $model"
+else
+  line1="📁 $short_cwd │ 🤖 $model"
+fi
+
+line2=""
+append2() {
+  if [ -n "$line2" ]; then line2+=" │ $1"; else line2="$1"; fi
 }
 
-# Initialize usage log
-[ ! -f "$USAGE_LOG" ] && echo "ts,sid,tokens" > "$USAGE_LOG"
+# コンテキスト使用率: 閾値以上のときだけバー + % を表示
+ctx_pct=$(echo "$input" | jq -r '.context_window.used_percentage // 0')
+ctx_int=$(awk "BEGIN {printf \"%.0f\", ${ctx_pct:-0}}")
+if [ "$ctx_int" -ge "$THRESHOLD" ] 2>/dev/null; then
+  filled=$((ctx_int / 10))
+  [ "$filled" -gt 10 ] && filled=10
+  bar=""
+  for ((i = 0; i < filled; i++)); do bar+="█"; done
+  for ((i = filled; i < 10; i++)); do bar+="░"; done
+  append2 "🧠 $bar ${ctx_int}%"
+fi
 
-# Session & burn rate tracking
-burn_rate_str="--"
-eta_str="--"
-br_val=0
-new_session=0
+# レート制限: 常時表示。resets_at からウィンドウ開始を逆算し、期待ペースとの比較で色付け
+# $1: rate_limits 配下の jq パス, $2: ラベル, $3: ウィンドウ長 (秒)
+rate_segment() {
+  local pct pct_int resets filled bar i pace color reset_c
+  pct=$(echo "$input" | jq -r "$1.used_percentage // empty")
+  [ -z "$pct" ] && return
+  pct_int=$(awk "BEGIN {printf \"%.0f\", $pct}")
+  filled=$((pct_int / 10))
+  [ "$filled" -gt 10 ] && filled=10
 
-if [ -f "$LAST_STATE_FILE" ]; then
-  last_sid=$(jq -r '.sid // ""' "$LAST_STATE_FILE" 2>/dev/null)
-  last_tok=$(jq -r '.tok // 0' "$LAST_STATE_FILE" 2>/dev/null)
-
-  if [ "$session_id" != "$last_sid" ] || [ "$current_used" -lt "${last_tok:-0}" ]; then
-    new_session=1
-    if [ -n "$last_sid" ] && [ "${last_tok:-0}" -gt 0 ]; then
-      echo "$current_time,$last_sid,$last_tok" >> "$USAGE_LOG"
+  color=""
+  reset_c=""
+  resets=$(echo "$input" | jq -r "$1.resets_at // empty")
+  if [[ "$resets" =~ ^[0-9]+$ ]]; then
+    pace=$(awk "BEGIN {p=(($3 - ($resets - $(date +%s))) / $3) * 100; if (p < 0) p = 0; if (p > 100) p = 100; printf \"%.0f\", p}")
+    if [ "$pct_int" -le "$pace" ]; then
+      color="$GREEN"
+    elif [ "$pct_int" -ge "$RATE_RED_THRESHOLD" ]; then
+      color="$RED"
+    else
+      color="$YELLOW"
     fi
-    printf '{"ts":%d,"tok":0}' "$current_time" > "$SESSION_FILE"
-    printf '{"sid":"%s","count":0,"last_used":%d}' "$session_id" "$current_used" > "$COMPRESS_FILE"
+    reset_c="$RESET"
   fi
+
+  bar=""
+  for ((i = 0; i < filled; i++)); do bar+="▓"; done
+  for ((i = filled; i < 10; i++)); do bar+="░"; done
+  printf '%s %s%s%s %d%%' "$2" "$color" "$bar" "$reset_c" "$pct_int"
+}
+
+seg=$(rate_segment '.rate_limits.five_hour' '⏳5h' 18000)
+[ -n "$seg" ] && append2 "$seg"
+seg=$(rate_segment '.rate_limits.seven_day' '📅週' 604800)
+[ -n "$seg" ] && append2 "$seg"
+
+if [ -n "$line2" ]; then
+  printf '%s\n%s' "$line1" "$line2"
 else
-  new_session=1
-  printf '{"ts":%d,"tok":0}' "$current_time" > "$SESSION_FILE"
-  printf '{"sid":"%s","count":0,"last_used":%d}' "$session_id" "$current_used" > "$COMPRESS_FILE"
+  printf '%s' "$line1"
 fi
-
-# Detect context compression (used_tokens drops significantly within same session)
-compress_count=0
-if [ -f "$COMPRESS_FILE" ]; then
-  c_sid=$(jq -r '.sid // ""' "$COMPRESS_FILE" 2>/dev/null)
-  c_count=$(jq -r '.count // 0' "$COMPRESS_FILE" 2>/dev/null)
-  c_last=$(jq -r '.last_used // 0' "$COMPRESS_FILE" 2>/dev/null)
-
-  if [ "$session_id" = "$c_sid" ]; then
-    compress_count=$c_count
-    if [ "$c_last" -gt 0 ] && [ "$current_used" -gt 0 ]; then
-      drop=$((c_last - current_used))
-      threshold=$((c_last / 5))
-      if [ "$drop" -gt "$threshold" ] && [ "$drop" -gt 10000 ]; then
-        compress_count=$((compress_count + 1))
-      fi
-    fi
-    printf '{"sid":"%s","count":%d,"last_used":%d}' "$session_id" "$compress_count" "$current_used" > "$COMPRESS_FILE"
-  fi
-fi
-
-# Update last state
-printf '{"sid":"%s","tok":%d,"ts":%d}' "$session_id" "$current_used" "$current_time" > "$LAST_STATE_FILE"
-
-# Calculate burn rate & ETA
-if [ -f "$SESSION_FILE" ]; then
-  s_start=$(jq -r '.ts' "$SESSION_FILE" 2>/dev/null || echo "$current_time")
-  elapsed=$((current_time - s_start))
-  if [ "$elapsed" -gt 10 ] && [ "$current_used" -gt 0 ]; then
-    br_val=$(awk "BEGIN {v=($current_used * 60.0) / $elapsed; printf \"%.0f\", v}")
-    burn_rate_str="$(fmt "$br_val")/min"
-
-    if [ "$br_val" -gt 0 ] 2>/dev/null; then
-      eta_sec=$(awk "BEGIN {printf \"%.0f\", ($remaining_tokens * 60.0) / $br_val}")
-      if [ "$eta_sec" -ge 3600 ] 2>/dev/null; then
-        eta_str="$(awk "BEGIN {printf \"%.1f\", $eta_sec/3600}")h"
-      elif [ "$eta_sec" -ge 60 ] 2>/dev/null; then
-        eta_str="$(awk "BEGIN {printf \"%.0f\", $eta_sec/60}")min"
-      else
-        eta_str="${eta_sec}s"
-      fi
-    fi
-  fi
-fi
-
-# Aggregate daily/weekly/monthly
-day_start=$(date -j -v0H -v0M -v0S +%s 2>/dev/null || echo $((current_time - 86400)))
-week_ago=$((current_time - 604800))
-month_ago=$((current_time - 2592000))
-
-d_total=0; w_total=0; m_total=0
-if [ -f "$USAGE_LOG" ]; then
-  while IFS=, read -r ts sid tok; do
-    [ "$ts" = "ts" ] && continue
-    [[ "$tok" =~ ^[0-9]+$ ]] || continue
-    [ "${ts:-0}" -ge "$day_start" ] 2>/dev/null && d_total=$((d_total + tok))
-    [ "${ts:-0}" -ge "$week_ago" ] 2>/dev/null && w_total=$((w_total + tok))
-    [ "${ts:-0}" -ge "$month_ago" ] 2>/dev/null && m_total=$((m_total + tok))
-  done < "$USAGE_LOG"
-fi
-
-d_total=$((d_total + used_tokens))
-w_total=$((w_total + used_tokens))
-m_total=$((m_total + used_tokens))
-
-# Prune old entries occasionally
-if [ $((RANDOM % 50)) -eq 0 ] && [ -f "$USAGE_LOG" ]; then
-  cutoff=$((current_time - 7776000))
-  tmp="$USAGE_LOG.tmp"
-  head -1 "$USAGE_LOG" > "$tmp"
-  tail -n +2 "$USAGE_LOG" | awk -F, -v c="$cutoff" '$1 >= c' >> "$tmp"
-  mv "$tmp" "$USAGE_LOG"
-fi
-
-# Build progress bar
-pct_int=$(awk "BEGIN {printf \"%.0f\", ${used_pct:-0}}" 2>/dev/null || echo "0")
-filled=$((pct_int / 10))
-[ "$filled" -gt 10 ] && filled=10
-empty=$((10 - filled))
-bar=""
-for ((i=0; i<filled; i++)); do bar+="█"; done
-for ((i=0; i<empty; i++)); do bar+="░"; done
-
-# Performance zone indicator
-if [ "$pct_int" -ge 90 ]; then
-  perf="🔴 Critical"
-elif [ "$pct_int" -ge 70 ]; then
-  perf="🟠 Warning"
-elif [ "$pct_int" -ge 50 ]; then
-  perf="🟡 Caution"
-else
-  perf="🟢 Good"
-fi
-
-# Output (2 lines)
-# Line 1: Session context status
-# Line 2: Burn rate + Usage history
-# Build dir+branch label
-if [ -n "$git_branch" ]; then
-  dir_label="📁 $short_cwd (🌿 $git_branch)"
-else
-  dir_label="📁 $short_cwd"
-fi
-
-printf "%s │ 🤖 %s\n📊 %s/%s %s %d%% %s │ ⬇%s ⬆%s │ 💡残%s │ ⏳~%s │ 🔄%d回\n🔥 %s │ 🕐 Daily:%s  🗓 Weekly:%s  📊 Monthly:%s" \
-  "$dir_label" \
-  "$model" \
-  "$(fmt $current_used)" \
-  "$(fmt $context_size)" \
-  "$bar" \
-  "$pct_int" \
-  "$perf" \
-  "$(fmt $total_input)" \
-  "$(fmt $total_output)" \
-  "$(fmt $remaining_tokens)" \
-  "$eta_str" \
-  "$compress_count" \
-  "$burn_rate_str" \
-  "$(fmt $d_total)" \
-  "$(fmt $w_total)" \
-  "$(fmt $m_total)"
