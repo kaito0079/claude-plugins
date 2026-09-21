@@ -23,7 +23,7 @@ It then proposes additions to whichever destination fits each pattern.
 
 ⬛ MUST
 - `/insights` has been run at least once so `~/.claude/usage-data/facets/` has data
-- This skill is installed via `install.sh` so `~/.claude/skills/learn-from-insights/` is the symlinked dir
+- This skill is symlinked into `~/.claude/skills/learn-from-insights/`
 
 ## Staging
 

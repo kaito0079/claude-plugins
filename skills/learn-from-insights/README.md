@@ -35,7 +35,7 @@ memory（個人）は Claude 標準機能がリアルタイム保存するが、
 
 ## 前提
 
-- `install.sh` を実行済み（`~/.claude/skills/learn-from-insights/` が symlink で配置される）
+- 本スキルが `~/.claude/skills/learn-from-insights/` に symlink 済み（配置手順はリポジトリ README 参照）
 - 過去に 1 回でも `/insights` を実行済み（`~/.claude/usage-data/facets/` にデータがある）
 
 ## 関連

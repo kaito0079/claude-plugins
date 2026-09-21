@@ -62,8 +62,8 @@ README.md must stay in sync with the following source files:
 |--------|------------------------|
 | `skills/*/SKILL.md` | スキル一覧テーブル・スキル詳細・構成図 |
 | `agents/*.md` | エージェント一覧テーブル・構成図 |
-| `claude-worktrees.sh` | Worktree マネージャーセクション |
-| `install.sh` | インストール手順 |
+| `scripts/*` | ユーティリティスクリプトセクション |
+| `status-line.sh` | ステータスラインセクション |
 
 ⬛ MUST
 - When adding, removing, or changing the `description` of a skill or agent, update README.md accordingly

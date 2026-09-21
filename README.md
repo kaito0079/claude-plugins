@@ -1,32 +1,41 @@
 # claude-tools
 
-Claude Code のカスタムスキル、エージェント、ステータスライン。
-`install.sh` で symlink を張り、全プロジェクトから利用可能。
+Claude Code の **公開可能な拡張キット**: スキル / エージェント / ユーティリティスクリプト / ステータスライン。
+`~/.claude/` 配下に symlink して使う。マシン固有の hook 本体や `settings.json` は含まない。
 
 ## インストール
 
-```bash
-cd ~/private/claude-tools
-chmod +x install.sh
-./install.sh
-```
-
-## アンインストール
+インストーラは持たない。任意の場所に clone し、以下 4 種類の symlink を張れば動く。
 
 ```bash
-./install.sh --uninstall
+CLAUDE_TOOLS="$(pwd)"   # このリポの clone 先
+
+# スキル / エージェント
+mkdir -p ~/.claude/skills ~/.claude/agents
+ln -fns "$CLAUDE_TOOLS"/skills/* ~/.claude/skills/
+ln -fns "$CLAUDE_TOOLS"/agents/* ~/.claude/agents/
+
+# ユーティリティスクリプト (拡張子を除いたコマンド名で配置)
+mkdir -p ~/.local/bin
+for f in "$CLAUDE_TOOLS"/scripts/*.py; do
+  ln -fns "$f" ~/.local/bin/"$(basename "${f%.*}")"
+done
+
+# ステータスライン (settings.json 側の設定は「ステータスライン」セクション参照)
+ln -fns "$CLAUDE_TOOLS"/status-line.sh ~/.claude/statusline.sh
 ```
+
+設定管理リポジトリなどから自動化する場合も、張るリンクはこの 4 種類だけ。
 
 ## 構成
 
 ```
 claude-tools/
-├── install.sh              symlink 作成/削除 + hook 登録
-├── status-line.sh          ステータスライン (→ ~/.claude/statusline.sh)
-├── CLAUDE.md               プロジェクトルール
 ├── README.md
+├── CLAUDE.md              プロジェクトルール (Skill/Agent authoring 規約)
+├── status-line.sh         ステータスライン (→ ~/.claude/statusline.sh)
 ├── docs/
-│   └── authoring-guide.md  スキル/エージェント作成ガイド
+│   └── authoring-guide.md スキル/エージェント作成ガイド
 ├── skills/
 │   ├── strict-review/SKILL.md         /strict-review - 敵対的コードレビュー
 │   ├── techdebt/SKILL.md              /techdebt - 技術的負債検出
@@ -35,12 +44,13 @@ claude-tools/
 ├── agents/
 │   ├── strict-review.md    レビューエージェント
 │   └── techdebt.md         技術的負債エージェント
-├── hooks/                  transcript 集約 (→ ~/.claude/hooks/)
-│   └── session_end_transcript_mirror.py Stop hook: worktree transcript をメインリポに集約
-└── scripts/                CLI 横断ユーティリティ (→ ~/.local/bin/)
+└── scripts/                (→ ~/.local/bin/)
     ├── claude-bash-stats.py        transcript の Bash 呼び出し集計
     └── claude-merge-transcripts.py worktree 分散 transcript をメインリポに集約
 ```
+
+hook 本体と `settings.json` への hook 登録は本リポに含めない。個人の cmux 環境や worktree
+レイアウトに強く依存し、公開キットとして再利用できないため。
 
 ## スキル一覧
 
@@ -121,7 +131,7 @@ claude-tools/
 
 ## ユーティリティスクリプト
 
-`scripts/` 以下の実行可能ファイルは `install.sh` で `~/.local/bin/` にシンボリックリンクされる（拡張子は除去）。
+`scripts/` 以下の実行可能ファイルは `~/.local/bin/` に拡張子を除いた名前で symlink して使う。
 
 ### `claude-bash-stats`
 
@@ -142,9 +152,8 @@ claude-bash-stats -f <repo-name> --format rules
 
 ### `claude-merge-transcripts`
 
-`session_end_transcript_mirror.py` フックの**バックフィル版**。フック導入前に
-worktree 配下に分散していた jsonl を、メインワークツリーの project dir に一括コピーする。
-以後は新規セッション分はフックで自動同期されるので、これは初回 1 回または
+worktree 配下に分散した transcript jsonl を、メインワークツリーの project dir に一括コピーする
+**バックフィルツール**。Stop hook などで新規セッション分を自動同期している場合は、初回 1 回または
 新しい worktree を大量に作った後の手動メンテで使う想定。
 
 ```bash
@@ -181,8 +190,7 @@ claude-merge-transcripts -f <repo-name> --target-cwd /Users/me/work/<repo-name>
 
 ### セットアップ
 
-`install.sh` で自動的にシンボリックリンクが作成される。
-`~/.claude/settings.json` に以下の設定が必要:
+`status-line.sh` を `~/.claude/statusline.sh` に symlink した上で、`settings.json` に以下を入れる:
 
 ```json
 {
@@ -192,43 +200,3 @@ claude-merge-transcripts -f <repo-name> --target-cwd /Users/me/work/<repo-name>
   }
 }
 ```
-
-
-## Worktree Transcript 集約
-
-Claude Code は `~/.claude/projects/<cwd-を-で-繋いだ名前>/<session>.jsonl` に
-セッションごとの transcript を書き出す。worktree を使うと cwd が分岐するため
-同じリポジトリでも transcript が複数ディレクトリに分散し、標準スキル
-（例: `/fewer-permission-prompts`）の集計範囲から漏れる。
-
-`session_end_transcript_mirror.py` は Stop hook として動き、worktree 側で
-進んでいるセッションの transcript を **メインリポのプロジェクトディレクトリに
-ミラーコピー** する。
-
-### 仕組み
-
-```
-[セッション中、各 assistant turn 終了時]
-Stop hook (session_end_transcript_mirror.py)
-   ├─ git worktree list --porcelain でメイン worktree を解決
-   ├─ cwd == メイン worktree なら何もしない
-   └─ それ以外: 自身の transcript を
-      ~/.claude/projects/<encoded-main-worktree>/<session_id>.jsonl
-      にコピー（mtime ベースで idempotent、変更なしならスキップ）
-```
-
-### 効果
-
-- メインリポでセッションを開いて `/fewer-permission-prompts` を呼ぶと、
-  全 worktree 分の transcript を 1 つの project dir でスキャンできる
-- `claude-bash-stats` を `-f` なしでもメイン dir を覗くだけで十分になる
-- worktree を `git worktree remove` してもメイン側にコピーが残るので履歴消滅しない
-
-### 注意点
-
-- 1 turn ごとに（変更があれば）ファイル丸ごとコピーするため、巨大 transcript で
-  は I/O コストがある。実害が出るほどではないが、想定外に重いと感じたら
-  `--disable-hooks` で外して挙動を確認すること
-- `~/.claude/projects/` 配下に新規ディレクトリと jsonl を生成する。
-  個別のセッション履歴が**集約先メインリポの project dir にも現れる**ことを
-  許容する設計
