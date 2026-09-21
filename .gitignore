@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+
+# ローカル専用の権限設定 (マシン固有・共有しない)
+.claude/settings.local.json
