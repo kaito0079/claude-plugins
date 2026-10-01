@@ -1,6 +1,6 @@
 #!/bin/bash
 # stage-facets.sh — Stage /insights per-session facets into /tmp/claude/ for the
-# learn-from-insights skill to consume.
+# my-learn-from-insights skill to consume.
 #
 # Idempotency: clears the staging dir first so deleted source facets do not
 # linger as stale entries in the staging copy.

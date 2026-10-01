@@ -1,5 +1,5 @@
 ---
-name: team-builder
+name: my-team-builder
 description: 設計書やタスクリストを元に、並列実装とレビュー用のエージェントチームを構築する。技術ドメインで作業を分割し、依存関係を管理し、品質保証を調整する。
 ---
 
@@ -13,7 +13,7 @@ sidebar state.
 
 ## When to Use This Skill
 
-Use `/team-builder` only when **all** of the following hold:
+Use `/my-team-builder` only when **all** of the following hold:
 
 ⬛ MUST — Activation checklist (all four must be YES)
 
@@ -31,7 +31,7 @@ Typical trigger phrases from the user:
 
 ## When NOT to Use This Skill
 
-⬛ MUST — Skip team-builder in these cases
+⬛ MUST — Skip my-team-builder in these cases
 
 - 1-2 tasks where parallelization adds no value
 - Single-domain small changes (a quick bug fix)
@@ -40,18 +40,18 @@ Typical trigger phrases from the user:
 - **Multiple agents must edit the same file**: later writes silently overwrite earlier changes (data loss, not a Git conflict)
 - **Cost-sensitive contexts**: teams consume several times more tokens than a single session
 
-### `/team-builder` vs. opening a new cmux window
+### `/my-team-builder` vs. opening a new cmux window
 
 Some users (including the author of this skill) keep one cmux window per task. The two patterns serve different needs:
 
-| Open a new cmux window | Invoke `/team-builder` |
+| Open a new cmux window | Invoke `/my-team-builder` |
 |------------------------|------------------------|
 | Independent features or feature branches | Single feature/PR with multiple deliverables |
 | Each task needs deep, interactive user dialogue | Specs are clear enough to fan out |
 | Long-running exploration | Predictable implementation work |
 | Different repos / cwds | Same repo, same branch |
 
-Default to the cmux-window pattern; reach for `/team-builder` only when the activation checklist passes.
+Default to the cmux-window pattern; reach for `/my-team-builder` only when the activation checklist passes.
 
 ## How It Works
 
@@ -66,7 +66,7 @@ Default to the cmux-window pattern; reach for `/team-builder` only when the acti
 ```
 
 For role-by-role visibility, open each task in a separate cmux window instead
-of invoking `/team-builder`.
+of invoking `/my-team-builder`.
 
 ## Instructions
 
@@ -108,7 +108,7 @@ Independent tasks (parallel)
 Output the plan in this exact format, then ask "この計画で進めて良いですか？":
 
 ```markdown
-## team-builder plan
+## my-team-builder plan
 
 ### Tasks
 | # | role        | subject              | files                        |
@@ -144,7 +144,7 @@ When the user approves, proceed. If they reject, refine and re-present.
 |------|---------------|----------------|------|
 | **Leader** | (self) | Task management, dependency control, applying review fixes | — |
 | **Implementer × N** | `general-purpose` | Implementation per technical domain | `bypassPermissions` |
-| **Reviewer** | `strict-review` | Quality verification of all deliverables | default |
+| **Reviewer** | `my-strict-review` | Quality verification of all deliverables | default |
 
 #### Model Strategy
 
@@ -260,7 +260,7 @@ When all implementation tasks complete, send `shutdown_request` to implementatio
 
 ```
 Task tool:
-  subagent_type: "strict-review"
+  subagent_type: "my-strict-review"
   name: "reviewer"
   team_name: "<team-name>"
 ```

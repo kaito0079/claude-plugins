@@ -37,13 +37,13 @@ claude-tools/
 ├── docs/
 │   └── authoring-guide.md スキル/エージェント作成ガイド
 ├── skills/
-│   ├── strict-review/SKILL.md         /strict-review - 敵対的コードレビュー
-│   ├── techdebt/SKILL.md              /techdebt - 技術的負債検出
-│   ├── team-builder/SKILL.md          /team-builder - チーム並列実装
-│   └── learn-from-insights/SKILL.md   /learn-from-insights - /insights 集計→ルール提案
+│   ├── my-strict-review/SKILL.md         /my-strict-review - 敵対的コードレビュー
+│   ├── my-techdebt/SKILL.md              /my-techdebt - 技術的負債検出
+│   ├── my-team-builder/SKILL.md          /my-team-builder - チーム並列実装
+│   └── my-learn-from-insights/SKILL.md   /my-learn-from-insights - /insights 集計→ルール提案
 ├── agents/
-│   ├── strict-review.md    レビューエージェント
-│   └── techdebt.md         技術的負債エージェント
+│   ├── my-strict-review.md    レビューエージェント
+│   └── my-techdebt.md         技術的負債エージェント
 └── scripts/                (→ ~/.local/bin/)
     ├── claude-bash-stats.py        transcript の Bash 呼び出し集計
     └── claude-merge-transcripts.py worktree 分散 transcript をメインリポに集約
@@ -56,10 +56,10 @@ hook 本体と `settings.json` への hook 登録は本リポに含めない。�
 
 | スキル | 呼び出し | タイミング |
 |--------|---------|-----------|
-| strict-review | `/strict-review` | PR作成前。5パスで厳格レビュー（標準 `/review` を上書きしないようリネーム） |
-| techdebt | `/techdebt` | セッション終了時。負債を検出しレポート |
-| team-builder | `/team-builder` | 設計書やタスクから並列実装チームを構築。ドメイン分割＋レビュー |
-| learn-from-insights | `/learn-from-insights` | 公式 `/insights` の facets を横断集計し、CLAUDE.md / .claude/notes/ / memory への追加候補を提案 |
+| my-strict-review | `/my-strict-review` | PR作成前。5パスで厳格レビュー（標準 `/review` を上書きしないようリネーム） |
+| my-techdebt | `/my-techdebt` | セッション終了時。負債を検出しレポート |
+| my-team-builder | `/my-team-builder` | 設計書やタスクから並列実装チームを構築。ドメイン分割＋レビュー |
+| my-learn-from-insights | `/my-learn-from-insights` | 公式 `/insights` の facets を横断集計し、CLAUDE.md / .claude/notes/ / memory への追加候補を提案 |
 
 ## エージェント一覧
 
@@ -67,33 +67,33 @@ hook 本体と `settings.json` への hook 登録は本リポに含めない。�
 
 | エージェント | 説明 |
 |-------------|------|
-| strict-review | 厳格なシニアエンジニアとして敵対的コードレビューを実施 |
-| techdebt | コードベースの技術的負債を検出しレポートを生成 |
+| my-strict-review | 厳格なシニアエンジニアとして敵対的コードレビューを実施 |
+| my-techdebt | コードベースの技術的負債を検出しレポートを生成 |
 
 ## スキル詳細
 
-### `/strict-review` - 敵対的レビュー
+### `/my-strict-review` - 敵対的レビュー
 
 ```
-/strict-review
-/strict-review path/to/file.php
+/my-strict-review
+/my-strict-review path/to/file.php
 ```
 
 5パス: セキュリティ → パフォーマンス → テスト → 設計 → 標準準拠
 致命的・重要な指摘が全て解決されるまで承認しない。
 
-### `/techdebt` - 技術的負債検出
+### `/my-techdebt` - 技術的負債検出
 
 ```
-/techdebt
+/my-techdebt
 ```
 
 重複コード、コードスメル、未使用コード、TODO/FIXME を検出し優先度別レポート。
 
-### `/team-builder` - チーム並列実装
+### `/my-team-builder` - チーム並列実装
 
 ```
-/team-builder
+/my-team-builder
 ```
 
 設計書やタスクリストに基づきエージェントチームを構築し、並列実装とコードレビューを実施。
@@ -111,10 +111,10 @@ hook 本体と `settings.json` への hook 登録は本リポに含めない。�
 
 cmux 環境では `Running` / `Needs input` ピルは cmux Claude wrapper が自動表示する（本スキルはサイドバーを触らない）。
 
-### `/learn-from-insights` - /insights 集計→ルール提案
+### `/my-learn-from-insights` - /insights 集計→ルール提案
 
 ```
-/learn-from-insights
+/my-learn-from-insights
 ```
 
 公式 `/insights` がセッションごとに生成する `~/.claude/usage-data/facets/*.json` を
@@ -123,7 +123,7 @@ cmux 環境では `Running` / `Needs input` ピルは cmux Claude wrapper が自
 
 仕組み:
 
-1. `bash ~/.claude/skills/learn-from-insights/stage-facets.sh` で facets を
+1. `bash ~/.claude/skills/my-learn-from-insights/stage-facets.sh` で facets を
    `/tmp/claude/insights-facets/` にステージング
 2. プロジェクト `CLAUDE.md` / `.claude/notes/` / `~/.claude/projects/<dir>/memory/MEMORY.md` の
    既存内容を読んで重複を除外

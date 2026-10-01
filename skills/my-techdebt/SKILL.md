@@ -1,5 +1,5 @@
 ---
-name: techdebt
+name: my-techdebt
 description: コードベースの技術的負債を検出してレポートを生成する。コードの重複、コードスメル、未使用 import、過度に複雑な関数を特定する。
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: learn-from-insights
+name: my-learn-from-insights
 description: Claude Code 標準の `/insights` がセッションごとに出力する facets を全履歴横断で集計し、繰り返し現れる friction パターンをクラスタリングして、プロジェクト `CLAUDE.md` / `.claude/notes/` / ユーザーメモリへの追加候補を提案する。
 ---
 
@@ -23,7 +23,7 @@ It then proposes additions to whichever destination fits each pattern.
 
 ⬛ MUST
 - `/insights` has been run at least once so `~/.claude/usage-data/facets/` has data
-- This skill is symlinked into `~/.claude/skills/learn-from-insights/`
+- This skill is symlinked into `~/.claude/skills/my-learn-from-insights/`
 
 ## Staging
 
@@ -39,13 +39,13 @@ happens only when the skill is actually invoked.
 Determine the skill directory and run the staging script:
 
 ```bash
-bash "$(dirname "$(readlink -f "$HOME/.claude/skills/learn-from-insights/SKILL.md")")/stage-facets.sh"
+bash "$(dirname "$(readlink -f "$HOME/.claude/skills/my-learn-from-insights/SKILL.md")")/stage-facets.sh"
 ```
 
 Or simply:
 
 ```bash
-bash ~/.claude/skills/learn-from-insights/stage-facets.sh
+bash ~/.claude/skills/my-learn-from-insights/stage-facets.sh
 ```
 
 If the script exits non-zero, surface the error to the user and stop. The most common
@@ -127,7 +127,7 @@ Show one block and stop for input. Never write before approval. Format (Japanese
 for user-facing output):
 
 ```
-=== /learn-from-insights 提案 ===
+=== /my-learn-from-insights 提案 ===
 集計対象: N セッション ( /tmp/claude/insights-facets/*.json )
 既存ルールと突き合わせて未カバーのもののみ表示
 
