@@ -1,7 +1,7 @@
 # claude-tools
 
 Claude Code の **公開可能な拡張キット**。スキル / エージェント / ユーティリティスクリプトを
-Claude Code のプラグインとして配布し、ステータスラインのスクリプトを同梱する。
+Claude Code のプラグインとして配布する。
 マシン固有の hook 本体や `settings.json` は含まない。
 
 ## インストール
@@ -32,7 +32,6 @@ claude plugin marketplace add /path/to/claude-tools
 claude-tools/
 ├── README.md
 ├── CLAUDE.md                     プロジェクトルール (Skill/Agent authoring 規約)
-├── status-line.sh                ステータスライン (→ ~/.claude/statusline.sh)
 ├── docs/
 │   └── authoring-guide.md        スキル/エージェント作成ガイド
 ├── .claude-plugin/
@@ -207,46 +206,3 @@ claude-merge-transcripts -f <repo-name> --target-cwd /Users/me/work/<repo-name>
 メイン worktree は内部で `git worktree list --porcelain` の最初のエントリから
 自動判定する。既にコピー済み（mtime ベース）のファイルはスキップするので、
 重ね打ちしても無害。
-
-## ステータスライン
-
-レート制限 (5 時間 / 週) の消費状況を常時表示する 2 行構成のステータスライン。
-
-```
-📁 claude-tools (🌿 main) │ 🤖 Opus 5
-⏳5h ▓▓▓░░░░░░░ 30% │ 📅週 ▓▓░░░░░░░░ 23%
-```
-
-### 表示内容
-
-| 項目 | 説明 |
-|------|------|
-| 📁 / 🌿 | カレントディレクトリ名と git ブランチ |
-| 🤖 | 使用中のモデル |
-| ⏳5h / 📅週 | レート制限の使用率 (常時表示) |
-| 🧠 | コンテキスト使用率。`THRESHOLD` (既定 80) 以上のときだけ 2 行目に追加 |
-
-レート制限のバーは、`resets_at` から逆算したウィンドウ経過率と使用率を比較して色を変える。
-単純な使用率の閾値ではなく「ペース」で判断するため、ウィンドウ序盤の高使用率を警告できる。
-
-| 色 | 条件 | 意味 |
-|----|------|------|
-| 緑 | 使用率 ≤ 経過率 | 期待ペース内。まだ余裕がある |
-| 黄 | 使用率 > 経過率 | ペース超過。このままだとリセット前に枯渇する |
-| 赤 | 使用率 > 経過率 かつ `RATE_RED_THRESHOLD` (既定 80) 以上 | ペース超過かつ残りわずか |
-
-`resets_at` が取得できない場合はペース判定ができないため無色で表示する。
-
-### セットアップ
-
-ステータスラインはプラグインから設定できないため、`status-line.sh` を `~/.claude/statusline.sh` に
-symlink した上で、`settings.json` に以下を入れる:
-
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "cat | bash ~/.claude/statusline.sh"
-  }
-}
-```

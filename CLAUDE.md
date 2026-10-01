@@ -66,7 +66,6 @@ README.md must stay in sync with the following source files:
 | `plugins/*/agents/*.md` | エージェント一覧テーブル・構成図 |
 | `plugins/*/bin/*` | ユーティリティスクリプトセクション |
 | `.claude-plugin/marketplace.json` | インストール・構成図 |
-| `status-line.sh` | ステータスラインセクション |
 
 ⬛ MUST
 - When adding, removing, or changing the `description` of a skill or agent, update README.md accordingly
