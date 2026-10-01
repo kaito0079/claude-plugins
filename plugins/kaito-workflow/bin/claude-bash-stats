@@ -8,16 +8,16 @@ worktree を多用すると ~/.claude/projects/ 配下にプロジェクトデ�
 
 Examples:
   # 全プロジェクトを集計
-  scripts/claude-bash-stats.py
+  claude-bash-stats
 
   # <repo-name> の全 worktree を横断集計
-  scripts/claude-bash-stats.py -f <repo-name>
+  claude-bash-stats -f <repo-name>
 
   # <repo-name> だけ、上位 50 件、settings.json で allow 済みも含めて表示
-  scripts/claude-bash-stats.py -f <repo-name> -n 50 --include-allowed
+  claude-bash-stats -f <repo-name> -n 50 --include-allowed
 
   # ~/.claude/settings.json の allow に貼り付ける形式で出力
-  scripts/claude-bash-stats.py -f <repo-name> --format rules
+  claude-bash-stats -f <repo-name> --format rules
 """
 from __future__ import annotations
 
