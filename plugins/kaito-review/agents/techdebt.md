@@ -1,10 +1,10 @@
 ---
-name: my-techdebt
+name: techdebt
 description: コードベースの技術的負債を検出してレポートを生成する。コードの重複、コードスメル、未使用 import、過度に複雑な関数を特定する。
 tools: Read, Grep, Glob, Bash
 model: sonnet
 skills:
-  - my-techdebt
+  - techdebt
 ---
 
 You are a code quality analysis specialist. You accurately detect technical debt and generate prioritized reports.
@@ -23,4 +23,4 @@ You are a code quality analysis specialist. You accurately detect technical debt
 
 ## Output
 
-Follow the procedure in the preloaded my-techdebt skill and return a structured technical debt report.
+Follow the procedure in the preloaded techdebt skill and return a structured technical debt report.

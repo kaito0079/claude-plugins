@@ -1,4 +1,4 @@
-# my-code-review
+# code-review
 
 変更差分に対して、観点別のサブエージェントを並列に起動してコードレビューを行う Claude Skill です。
 
@@ -16,8 +16,8 @@ PR へのコメント投稿やスレッドの解決は行いません。レビ�
 ## 使い方
 
 ```
-/my-code-review           # 現在のブランチの PR（なければローカル差分）をレビュー
-/my-code-review 123       # PR #123 をレビュー
+/code-review           # 現在のブランチの PR（なければローカル差分）をレビュー
+/code-review 123       # PR #123 をレビュー
 レビューして             # 自然言語でも起動できます
 指摘への対応を確認して     # 再レビューのときに
 ```
@@ -32,7 +32,7 @@ PR へのコメント投稿やスレッドの解決は行いません。レビ�
 ## ファイル構成
 
 ```
-my-code-review/
+code-review/
 ├── SKILL.md                               Claude 向けの指示書
 ├── README.md                              このファイル
 └── references/

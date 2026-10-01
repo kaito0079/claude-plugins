@@ -6,12 +6,12 @@
 ## 使い方
 
 ```
-/my-learn-from-insights
+/learn-from-insights
 ```
 
 呼び出すと Claude が：
 
-1. `bash ~/.claude/skills/my-learn-from-insights/stage-facets.sh` を実行して facets を `/tmp/claude/insights-facets/` にステージング
+1. プラグインに同梱の `stage-facets.sh` を実行して facets を `/tmp/claude/insights-facets/` にステージング
 2. プロジェクト `CLAUDE.md` / `.claude/notes/` / memory の既存内容を読む
 3. facets の `friction_detail` をクラスタリング、複数セッションで再出現するパターンを抽出
 4. 既存ルールでカバー済みのものは除外
@@ -35,7 +35,7 @@ memory（個人）は Claude 標準機能がリアルタイム保存するが、
 
 ## 前提
 
-- 本スキルが `~/.claude/skills/my-learn-from-insights/` に symlink 済み（配置手順はリポジトリ README 参照）
+- `kaito-workflow` プラグインを導入済み（導入手順はリポジトリ README 参照）
 - 過去に 1 回でも `/insights` を実行済み（`~/.claude/usage-data/facets/` にデータがある）
 
 ## 関連
