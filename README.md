@@ -37,6 +37,7 @@ claude-tools/
 ├── docs/
 │   └── authoring-guide.md スキル/エージェント作成ガイド
 ├── skills/
+│   ├── my-code-review/SKILL.md           /my-code-review - 観点別の並列コードレビュー
 │   ├── my-strict-review/SKILL.md         /my-strict-review - 敵対的コードレビュー
 │   ├── my-techdebt/SKILL.md              /my-techdebt - 技術的負債検出
 │   ├── my-team-builder/SKILL.md          /my-team-builder - チーム並列実装
@@ -56,6 +57,7 @@ hook 本体と `settings.json` への hook 登録は本リポに含めない。�
 
 | スキル | 呼び出し | タイミング |
 |--------|---------|-----------|
+| my-code-review | `/my-code-review` | PR またはブランチの変更のレビュー時。観点別サブエージェントを並列起動し、既存コメントの対応状況も判定 |
 | my-strict-review | `/my-strict-review` | PR作成前。5パスで厳格レビュー（標準 `/review` を上書きしないようリネーム） |
 | my-techdebt | `/my-techdebt` | セッション終了時。負債を検出しレポート |
 | my-team-builder | `/my-team-builder` | 設計書やタスクから並列実装チームを構築。ドメイン分割＋レビュー |
@@ -71,6 +73,20 @@ hook 本体と `settings.json` への hook 登録は本リポに含めない。�
 | my-techdebt | コードベースの技術的負債を検出しレポートを生成 |
 
 ## スキル詳細
+
+### `/my-code-review` - 観点別の並列コードレビュー
+
+```
+/my-code-review
+/my-code-review 123
+```
+
+ロジック / セキュリティ / テスト / 改善提案の 4 観点を並列で起動し、リポジトリに規約文書
+（`CLAUDE.md`、`.claude/rules/`、`CONTRIBUTING.md` など）があれば規約準拠の観点も加える。
+結果は `[MUST]` / `[IMO]` / `[ASK]` / `[NITS]` / `[LGTM]` のタグ付きで統合して表示する。
+PR に未解決のレビュースレッドがあれば、指摘への対応が適切か（未対応 / 対応が不十分 / 説明の再確認が必要 /
+対応済み）も判定する。PR がなければ、デフォルトブランチとのローカル差分をレビューする。
+エージェント定義は持たず、観点ルールを `references/` からプロンプトとして渡す。PR へのコメント投稿は行わない。
 
 ### `/my-strict-review` - 敵対的レビュー
 
