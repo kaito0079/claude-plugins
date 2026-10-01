@@ -6,7 +6,7 @@
 
 ### Scope
 - `SKILL.md`: Japanese or English (consistent within file)
-- `agents/*.md`: Japanese or English (frontmatter + system prompt, consistent within file)
+- `plugins/*/agents/*.md`: Japanese or English (frontmatter + system prompt, consistent within file)
 - `scripts/*.py`: Comments and docstrings in **English** (technical artifacts)
 - `references/*.md`: Japanese or English
 - Error messages: English (or English + Japanese bilingual)

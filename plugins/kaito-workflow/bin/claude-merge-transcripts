@@ -3,9 +3,9 @@
 
 Claude Code stores transcripts under `~/.claude/projects/<encoded-cwd>/<session>.jsonl`.
 Because git worktrees produce distinct cwds, the same repository's history ends up
-scattered across multiple project dirs. The `session_end_transcript_mirror.py` hook
-keeps things in sync for *new* sessions, but pre-existing transcripts need a manual
-pass — that's what this script does.
+scattered across multiple project dirs. A Stop hook that mirrors each session's
+transcript can keep things in sync for *new* sessions, but pre-existing transcripts
+need a manual pass — that's what this script does.
 
 For a given repository filter, the script:
   1. Finds all `~/.claude/projects/*` dirs whose name contains the filter.

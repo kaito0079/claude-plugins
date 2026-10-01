@@ -1,53 +1,60 @@
 # claude-tools
 
-Claude Code の **公開可能な拡張キット**: スキル / エージェント / ユーティリティスクリプト / ステータスライン。
-`~/.claude/` 配下に symlink して使う。マシン固有の hook 本体や `settings.json` は含まない。
+Claude Code の **公開可能な拡張キット**。スキル / エージェント / ユーティリティスクリプトを
+Claude Code のプラグインとして配布し、ステータスラインのスクリプトを同梱する。
+マシン固有の hook 本体や `settings.json` は含まない。
 
 ## インストール
 
-インストーラは持たない。任意の場所に clone し、以下 4 種類の symlink を張れば動く。
+このリポジトリはプラグインのマーケットプレイス `kaito-plugins` を兼ねる。
+マーケットプレイスとして登録し、使うプラグインを入れる。
 
 ```bash
-CLAUDE_TOOLS="$(pwd)"   # このリポの clone 先
-
-# スキル / エージェント
-mkdir -p ~/.claude/skills ~/.claude/agents
-ln -fns "$CLAUDE_TOOLS"/skills/* ~/.claude/skills/
-ln -fns "$CLAUDE_TOOLS"/agents/* ~/.claude/agents/
-
-# ユーティリティスクリプト (拡張子を除いたコマンド名で配置)
-mkdir -p ~/.local/bin
-for f in "$CLAUDE_TOOLS"/scripts/*.py; do
-  ln -fns "$f" ~/.local/bin/"$(basename "${f%.*}")"
-done
-
-# ステータスライン (settings.json 側の設定は「ステータスライン」セクション参照)
-ln -fns "$CLAUDE_TOOLS"/status-line.sh ~/.claude/statusline.sh
+claude plugin marketplace add kaito0079/claude-tools
+claude plugin install kaito-review@kaito-plugins
+claude plugin install kaito-workflow@kaito-plugins
 ```
 
-設定管理リポジトリなどから自動化する場合も、張るリンクはこの 4 種類だけ。
+Claude Code の中からは `/plugin marketplace add` と `/plugin install` で同じことができる。
+`--scope project` を付けると、プロジェクトの `.claude/settings.json` に登録され、そのプロジェクトで
+作業する全員が同じプラグインを使える。
+
+手元の clone を直接読ませる場合は、パスを指定して登録する。編集はセッションの開始時か
+`/reload-plugins` で反映される。1 回だけ試すなら `claude --plugin-dir plugins/kaito-review` でもよい。
+
+```bash
+claude plugin marketplace add /path/to/claude-tools
+```
 
 ## 構成
 
 ```
 claude-tools/
 ├── README.md
-├── CLAUDE.md              プロジェクトルール (Skill/Agent authoring 規約)
-├── status-line.sh         ステータスライン (→ ~/.claude/statusline.sh)
+├── CLAUDE.md                     プロジェクトルール (Skill/Agent authoring 規約)
+├── status-line.sh                ステータスライン (→ ~/.claude/statusline.sh)
 ├── docs/
-│   └── authoring-guide.md スキル/エージェント作成ガイド
-├── skills/
-│   ├── my-code-review/SKILL.md           /my-code-review - 観点別の並列コードレビュー
-│   ├── my-strict-review/SKILL.md         /my-strict-review - 敵対的コードレビュー
-│   ├── my-techdebt/SKILL.md              /my-techdebt - 技術的負債検出
-│   ├── my-team-builder/SKILL.md          /my-team-builder - チーム並列実装
-│   └── my-learn-from-insights/SKILL.md   /my-learn-from-insights - /insights 集計→ルール提案
-├── agents/
-│   ├── my-strict-review.md    レビューエージェント
-│   └── my-techdebt.md         技術的負債エージェント
-└── scripts/                (→ ~/.local/bin/)
-    ├── claude-bash-stats.py        transcript の Bash 呼び出し集計
-    └── claude-merge-transcripts.py worktree 分散 transcript をメインリポに集約
+│   └── authoring-guide.md        スキル/エージェント作成ガイド
+├── .claude-plugin/
+│   └── marketplace.json          マーケットプレイス kaito-plugins の定義
+└── plugins/
+    ├── kaito-review/             レビューと品質
+    │   ├── .claude-plugin/plugin.json
+    │   ├── skills/
+    │   │   ├── code-review/      /code-review - 観点別の並列コードレビュー
+    │   │   ├── strict-review/    /strict-review - 敵対的コードレビュー
+    │   │   └── techdebt/         /techdebt - 技術的負債検出
+    │   └── agents/
+    │       ├── strict-review.md  レビューエージェント
+    │       └── techdebt.md       技術的負債エージェント
+    └── kaito-workflow/           開発の進め方と振り返り
+        ├── .claude-plugin/plugin.json
+        ├── skills/
+        │   ├── team-builder/          /team-builder - チーム並列実装
+        │   └── learn-from-insights/   /learn-from-insights - /insights 集計→ルール提案
+        └── bin/                       プラグインを入れると PATH に入る
+            ├── claude-bash-stats         transcript の Bash 呼び出し集計
+            └── claude-merge-transcripts  worktree 分散 transcript をメインリポに集約
 ```
 
 hook 本体と `settings.json` への hook 登録は本リポに含めない。個人の cmux 環境や worktree
@@ -55,30 +62,40 @@ hook 本体と `settings.json` への hook 登録は本リポに含めない。�
 
 ## スキル一覧
 
-| スキル | 呼び出し | タイミング |
-|--------|---------|-----------|
-| my-code-review | `/my-code-review` | PR またはブランチの変更のレビュー時。観点別サブエージェントを並列起動し、既存コメントの対応状況も判定 |
-| my-strict-review | `/my-strict-review` | PR作成前。5パスで厳格レビュー（標準 `/review` を上書きしないようリネーム） |
-| my-techdebt | `/my-techdebt` | セッション終了時。負債を検出しレポート |
-| my-team-builder | `/my-team-builder` | 設計書やタスクから並列実装チームを構築。ドメイン分割＋レビュー |
-| my-learn-from-insights | `/my-learn-from-insights` | 公式 `/insights` の facets を横断集計し、CLAUDE.md / .claude/notes/ / memory への追加候補を提案 |
+プラグインのスキルは `/<プラグイン名>:<スキル名>` でも呼べる。ほかに同じ名前のスキルがなければ
+`/<スキル名>` だけでよい。プロジェクトに同じ名前のスキルがある場合は、短い名前ではプロジェクトの
+スキルが動くので、こちらは名前空間付きで呼ぶ。
+
+| プラグイン | スキル | 呼び出し | タイミング |
+|-----------|--------|---------|-----------|
+| kaito-review | code-review | `/kaito-review:code-review` | PR またはブランチの変更のレビュー時。観点別サブエージェントを並列起動し、既存コメントの対応状況も判定 |
+| kaito-review | strict-review | `/strict-review` | PR作成前。5パスで厳格レビュー |
+| kaito-review | techdebt | `/techdebt` | セッション終了時。負債を検出しレポート |
+| kaito-workflow | team-builder | `/team-builder` | 設計書やタスクから並列実装チームを構築。ドメイン分割＋レビュー |
+| kaito-workflow | learn-from-insights | `/learn-from-insights` | 公式 `/insights` の facets を横断集計し、CLAUDE.md / .claude/notes/ / memory への追加候補を提案 |
+
+`code-review` は Claude Code 同梱のスキルと名前が重なるため、名前空間付きで呼ぶ。
 
 ## エージェント一覧
 
-スキルと連携して自律的にタスクを実行するサブエージェント。
+スキルと連携して自律的にタスクを実行するサブエージェント。`subagent_type` には
+`kaito-review:<名前>` の形で指定する。
 
 | エージェント | 説明 |
 |-------------|------|
-| my-strict-review | 厳格なシニアエンジニアとして敵対的コードレビューを実施 |
-| my-techdebt | コードベースの技術的負債を検出しレポートを生成 |
+| kaito-review:strict-review | 厳格なシニアエンジニアとして敵対的コードレビューを実施 |
+| kaito-review:techdebt | コードベースの技術的負債を検出しレポートを生成 |
+
+`team-builder` はレビュー担当に `kaito-review:strict-review` を使う。`kaito-review` を入れていない
+場合は `general-purpose` で代用する。
 
 ## スキル詳細
 
-### `/my-code-review` - 観点別の並列コードレビュー
+### `/kaito-review:code-review` - 観点別の並列コードレビュー
 
 ```
-/my-code-review
-/my-code-review 123
+/kaito-review:code-review
+/kaito-review:code-review 123
 ```
 
 ロジック / セキュリティ / テスト / 改善提案の 4 観点を並列で起動し、リポジトリに規約文書
@@ -88,28 +105,28 @@ PR に未解決のレビュースレッドがあれば、指摘への対応が�
 対応済み）も判定する。PR がなければ、デフォルトブランチとのローカル差分をレビューする。
 エージェント定義は持たず、観点ルールを `references/` からプロンプトとして渡す。PR へのコメント投稿は行わない。
 
-### `/my-strict-review` - 敵対的レビュー
+### `/strict-review` - 敵対的レビュー
 
 ```
-/my-strict-review
-/my-strict-review path/to/file.php
+/strict-review
+/strict-review path/to/file.php
 ```
 
 5パス: セキュリティ → パフォーマンス → テスト → 設計 → 標準準拠
 致命的・重要な指摘が全て解決されるまで承認しない。
 
-### `/my-techdebt` - 技術的負債検出
+### `/techdebt` - 技術的負債検出
 
 ```
-/my-techdebt
+/techdebt
 ```
 
 重複コード、コードスメル、未使用コード、TODO/FIXME を検出し優先度別レポート。
 
-### `/my-team-builder` - チーム並列実装
+### `/team-builder` - チーム並列実装
 
 ```
-/my-team-builder
+/team-builder
 ```
 
 設計書やタスクリストに基づきエージェントチームを構築し、並列実装とコードレビューを実施。
@@ -127,10 +144,10 @@ PR に未解決のレビュースレッドがあれば、指摘への対応が�
 
 cmux 環境では `Running` / `Needs input` ピルは cmux Claude wrapper が自動表示する（本スキルはサイドバーを触らない）。
 
-### `/my-learn-from-insights` - /insights 集計→ルール提案
+### `/learn-from-insights` - /insights 集計→ルール提案
 
 ```
-/my-learn-from-insights
+/learn-from-insights
 ```
 
 公式 `/insights` がセッションごとに生成する `~/.claude/usage-data/facets/*.json` を
@@ -139,7 +156,7 @@ cmux 環境では `Running` / `Needs input` ピルは cmux Claude wrapper が自
 
 仕組み:
 
-1. `bash ~/.claude/skills/my-learn-from-insights/stage-facets.sh` で facets を
+1. プラグインに同梱の `stage-facets.sh` で facets を
    `/tmp/claude/insights-facets/` にステージング
 2. プロジェクト `CLAUDE.md` / `.claude/notes/` / `~/.claude/projects/<dir>/memory/MEMORY.md` の
    既存内容を読んで重複を除外
@@ -151,7 +168,7 @@ cmux 環境では `Running` / `Needs input` ピルは cmux Claude wrapper が自
 
 ## ユーティリティスクリプト
 
-`scripts/` 以下の実行可能ファイルは `~/.local/bin/` に拡張子を除いた名前で symlink して使う。
+`kaito-workflow` の `bin/` にあるコマンドは、プラグインを入れると PATH に入る。
 
 ### `claude-bash-stats`
 
@@ -222,7 +239,8 @@ claude-merge-transcripts -f <repo-name> --target-cwd /Users/me/work/<repo-name>
 
 ### セットアップ
 
-`status-line.sh` を `~/.claude/statusline.sh` に symlink した上で、`settings.json` に以下を入れる:
+ステータスラインはプラグインから設定できないため、`status-line.sh` を `~/.claude/statusline.sh` に
+symlink した上で、`settings.json` に以下を入れる:
 
 ```json
 {
