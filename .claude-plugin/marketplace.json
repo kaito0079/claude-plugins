@@ -1,0 +1,17 @@
+{
+  "name": "kaito-plugins",
+  "owner": { "name": "kaito0079", "url": "https://github.com/kaito0079" },
+  "description": "Claude Code plugins for code review and day-to-day development workflow",
+  "plugins": [
+    {
+      "name": "kaito-review",
+      "source": "./plugins/kaito-review",
+      "description": "Parallel code review, strict adversarial review, and technical debt detection"
+    },
+    {
+      "name": "kaito-workflow",
+      "source": "./plugins/kaito-workflow",
+      "description": "Learning from /insights and agent team orchestration"
+    }
+  ]
+}

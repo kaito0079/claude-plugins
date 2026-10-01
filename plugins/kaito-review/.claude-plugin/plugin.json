@@ -1,0 +1,6 @@
+{
+  "name": "kaito-review",
+  "version": "1.0.0",
+  "description": "Parallel code review, strict adversarial review, and technical debt detection",
+  "author": { "name": "kaito0079", "url": "https://github.com/kaito0079" }
+}
