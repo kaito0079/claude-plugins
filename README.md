@@ -1,4 +1,4 @@
-# claude-tools
+# claude-plugins
 
 Claude Code の **公開可能な拡張キット**。スキル / エージェント / ユーティリティスクリプトを
 Claude Code のプラグインとして配布する。
@@ -10,7 +10,7 @@ Claude Code のプラグインとして配布する。
 マーケットプレイスとして登録し、使うプラグインを入れる。
 
 ```bash
-claude plugin marketplace add kaito0079/claude-tools
+claude plugin marketplace add kaito0079/claude-plugins
 claude plugin install kaito-review@kaito-plugins
 claude plugin install kaito-workflow@kaito-plugins
 ```
@@ -23,13 +23,13 @@ Claude Code の中からは `/plugin marketplace add` と `/plugin install` で�
 `/reload-plugins` で反映される。1 回だけ試すなら `claude --plugin-dir plugins/kaito-review` でもよい。
 
 ```bash
-claude plugin marketplace add /path/to/claude-tools
+claude plugin marketplace add /path/to/claude-plugins
 ```
 
 ## 構成
 
 ```
-claude-tools/
+claude-plugins/
 ├── README.md
 ├── CLAUDE.md                     プロジェクトルール (Skill/Agent authoring 規約)
 ├── docs/
