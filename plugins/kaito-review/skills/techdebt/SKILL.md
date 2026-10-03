@@ -52,9 +52,9 @@ Analyze code from the following perspectives:
 **Frontend:**
 - Components exceeding 200 lines
 - Components with too many props (7 or more)
-- useEffect dependency array issues
+- Effect or subscription dependency issues (e.g. React `useEffect`)
 - Potential unnecessary re-renders
-- Usage of `any` type
+- Overly loose types (e.g. TypeScript `any`)
 
 ### 4. Detect Unused Code
 

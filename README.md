@@ -108,7 +108,7 @@ PR に未解決のレビュースレッドがあれば、指摘への対応が�
 
 ```
 /strict-review
-/strict-review path/to/file.php
+/strict-review path/to/file
 ```
 
 5パス: セキュリティ → パフォーマンス → テスト → 設計 → 標準準拠

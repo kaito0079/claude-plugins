@@ -46,13 +46,13 @@ git diff HEAD~1
 
 Check strictly for the following:
 
-- **Authentication/Authorization flaws**: Missing token validation, unapplied policies
+- **Authentication/Authorization flaws**: Missing authentication checks, authorization rules not applied
 - **Injection attacks**: SQL injection, XSS, command injection
 - **Data leakage**: Sensitive data in logs, unnecessary data in responses
 - **CSRF protection**: CSRF token validation on state-changing APIs
 - **File uploads**: MIME type validation, path traversal
-- **Hardcoded credentials**: Secret values used outside of .env
-- **Mass assignment**: Proper ORM configuration
+- **Hardcoded credentials**: Secrets embedded in source code instead of environment variables or a secret manager
+- **Mass assignment**: Request data bound to models without an allowlist of fields
 - **Privilege escalation**: Cross-tenant data access controls
 
 ### 2. Pass 2: Performance Review
@@ -74,7 +74,7 @@ Check for the following:
 - **Test existence**: Whether tests exist for new features/changes
 - **Test quality**: Tests beyond the happy path (error cases, boundary values)
 - **Test independence**: Tests do not depend on other tests
-- **Test data**: Proper test data generation using factories
+- **Test data**: Test data built with the project's existing helpers (factories, fixtures, builders)
 - **Mocking**: Appropriate mocking of external services
 - **Coverage**: Coverage of critical business logic
 
@@ -87,7 +87,7 @@ Check for the following:
 - **Naming conventions**: Whether class, method, and variable names express intent
 - **API design**: RESTful design principles, consistency with specifications
 - **Error handling**: Consistency in exception handling, unified error responses
-- **Project-specific patterns**: Compliance with patterns described in CLAUDE.md or tech.md
+- **Project-specific patterns**: Compliance with patterns described in CLAUDE.md or other project convention documents
 
 ### 5. Pass 5: Coding Standards Compliance
 
