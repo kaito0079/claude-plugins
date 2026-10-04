@@ -11,7 +11,7 @@
     {
       "name": "kaito-workflow",
       "source": "./plugins/kaito-workflow",
-      "description": "Learning from /insights and agent team orchestration"
+      "description": "Learning from /insights, thinking deep-dives, and agent team orchestration"
     }
   ]
 }

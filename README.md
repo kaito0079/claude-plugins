@@ -50,7 +50,8 @@ claude-plugins/
         ├── .claude-plugin/plugin.json
         ├── skills/
         │   ├── team-builder/          /team-builder - チーム並列実装
-        │   └── learn-from-insights/   /learn-from-insights - /insights 集計→ルール提案
+        │   ├── learn-from-insights/   /learn-from-insights - /insights 集計→ルール提案
+        │   └── dig-thinking/          /dig-thinking - 自分の考えの深掘りと言語化
         └── bin/                       プラグインを入れると PATH に入る
             ├── claude-bash-stats         transcript の Bash 呼び出し集計
             └── claude-merge-transcripts  worktree 分散 transcript をメインリポに集約
@@ -72,6 +73,7 @@ hook 本体と `settings.json` への hook 登録は本リポに含めない。�
 | kaito-review | techdebt | `/techdebt` | セッション終了時。負債を検出しレポート |
 | kaito-workflow | team-builder | `/team-builder` | 設計書やタスクから並列実装チームを構築。ドメイン分割＋レビュー |
 | kaito-workflow | learn-from-insights | `/learn-from-insights` | 公式 `/insights` の facets を横断集計し、CLAUDE.md / .claude/notes/ / memory への追加候補を提案 |
+| kaito-workflow | dig-thinking | `/dig-thinking` | 自分の考えや判断基準を言語化したいとき。質問を重ねて深掘りし、判断メモにまとめる |
 
 `code-review` は Claude Code 同梱のスキルと名前が重なるため、名前空間付きで呼ぶ。
 
@@ -164,6 +166,21 @@ cmux 環境では `Running` / `Needs input` ピルは cmux Claude wrapper が自
 5. ユーザー承認キーで一括適用
 
 `/insights` 自体は HTML レポート生成までで自動反映はしない。本スキルはその後段を担う。
+
+### `/dig-thinking` - 自分の考えの深掘り
+
+```
+/dig-thinking
+/dig-thinking コミット署名をやめた判断
+```
+
+自分の判断や考えを、Claude が仮説を添えた質問を 1 回に 1〜3 問ずつ出して深掘りする。
+具体的な出来事から始め、具体化・なぜの掘り下げ・反例・優先順位・他者視点・汎用化の角度で掘り、
+原則・理由・適用範囲・例外と境界・優先順位・具体例・未解決の問いをまとめた判断メモを作る。
+承認した判断メモは、指定した場所か作業ディレクトリの判断基準ファイル（`PRINCIPLES.md` など）に保存できる。
+公開する場所に保存するときは、社名・顧客名・案件名などの固有の情報を取り除く。
+自動では起動せず、明示的に呼び出したときだけ動く。
+Matt Pocock 氏の grill-me（MIT License）の進め方を参考にしている。
 
 ## ユーティリティスクリプト
 
