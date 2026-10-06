@@ -49,6 +49,7 @@ claude-plugins/
     └── kaito-workflow/           開発の進め方と振り返り
         ├── .claude-plugin/plugin.json
         ├── skills/
+        │   ├── status-check/          /status-check - 作業の現在地と未決事項の整理
         │   ├── team-builder/          /team-builder - チーム並列実装
         │   └── learn-from-insights/   /learn-from-insights - /insights 集計→ルール提案
         └── bin/                       プラグインを入れると PATH に入る
@@ -70,6 +71,7 @@ hook 本体と `settings.json` への hook 登録は本リポに含めない。�
 | kaito-review | code-review | `/kaito-review:code-review` | PR またはブランチの変更のレビュー時。観点別サブエージェントを並列起動し、既存コメントの対応状況も判定 |
 | kaito-review | strict-review | `/strict-review` | PR作成前。5パスで厳格レビュー |
 | kaito-review | techdebt | `/techdebt` | セッション終了時。負債を検出しレポート |
+| kaito-workflow | status-check | `/status-check` | 作業の再開時や別のセッションで触った後。ブランチ・未 push のコミット・PR と CI を確認し、意図しないコミットが混ざっていないかも判定 |
 | kaito-workflow | team-builder | `/team-builder` | 設計書やタスクから並列実装チームを構築。ドメイン分割＋レビュー |
 | kaito-workflow | learn-from-insights | `/learn-from-insights` | 公式 `/insights` の facets を横断集計し、CLAUDE.md / .claude/notes/ / memory への追加候補を提案 |
 
@@ -121,6 +123,17 @@ PR に未解決のレビュースレッドがあれば、指摘への対応が�
 ```
 
 重複コード、コードスメル、未使用コード、TODO/FIXME を検出し優先度別レポート。
+
+### `/status-check` - 作業の現在地の整理
+
+```
+/status-check
+```
+
+ブランチ・未コミットの変更・未 push のコミット・upstream との差・stash・worktree・PR と CI の状態を
+決まった手順で集め、「現在地」「このセッションで決めたこと」「未決事項」「次の一手」にまとめる。
+未 push のコミットがこのセッションの作業と関係あるかも確かめ、別のセッションのコミットが混ざって
+いれば報告する。ファイルの編集・コミット・push はしない。
 
 ### `/team-builder` - チーム並列実装
 

@@ -11,7 +11,7 @@
     {
       "name": "kaito-workflow",
       "source": "./plugins/kaito-workflow",
-      "description": "Learning from /insights and agent team orchestration"
+      "description": "Session status checks, learning from /insights, and agent team orchestration"
     }
   ]
 }
