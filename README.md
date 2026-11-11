@@ -50,6 +50,7 @@ claude-plugins/
         ├── .claude-plugin/plugin.json
         ├── skills/
         │   ├── status-check/          /status-check - 作業の現在地と未決事項の整理
+        │   ├── grill-me/              /kaito-workflow:grill-me - 計画を質問で詰める
         │   ├── team-builder/          /team-builder - チーム並列実装
         │   └── learn-from-insights/   /learn-from-insights - /insights 集計→ルール提案
         └── bin/                       プラグインを入れると PATH に入る
@@ -72,10 +73,12 @@ hook 本体と `settings.json` への hook 登録は本リポに含めない。�
 | kaito-review | strict-review | `/strict-review` | PR作成前。5パスで厳格レビュー |
 | kaito-review | techdebt | `/techdebt` | セッション終了時。負債を検出しレポート |
 | kaito-workflow | status-check | `/status-check` | 作業の再開時や別のセッションで触った後。ブランチ・未 push のコミット・PR と CI を確認し、意図しないコミットが混ざっていないかも判定 |
+| kaito-workflow | grill-me | `/kaito-workflow:grill-me` | 計画・設計を決め切りたいとき。1 問ずつ選択肢とメリット・デメリット付きで聞き、最後に決定事項を要約。明示的に呼んだときだけ動く |
 | kaito-workflow | team-builder | `/team-builder` | 設計書やタスクから並列実装チームを構築。ドメイン分割＋レビュー |
 | kaito-workflow | learn-from-insights | `/learn-from-insights` | 公式 `/insights` の facets を横断集計し、CLAUDE.md / .claude/notes/ / memory への追加候補を提案 |
 
 `code-review` は Claude Code 同梱のスキルと名前が重なるため、名前空間付きで呼ぶ。
+`grill-me` は同じ名前のスキルが広く配布されていて、プロジェクトに置かれていることも多いため、名前空間付きで呼ぶ。
 
 ## エージェント一覧
 
@@ -134,6 +137,19 @@ PR に未解決のレビュースレッドがあれば、指摘への対応が�
 決まった手順で集め、「現在地」「このセッションで決めたこと」「未決事項」「次の一手」にまとめる。
 未 push のコミットがこのセッションの作業と関係あるかも確かめ、別のセッションのコミットが混ざって
 いれば報告する。ファイルの編集・コミット・push はしない。
+
+### `/kaito-workflow:grill-me` - 計画を質問で詰める
+
+```
+/kaito-workflow:grill-me
+/kaito-workflow:grill-me 通知機能の再設計
+```
+
+先に調べた前提を根拠付きで示して訂正を受け、決定ツリーのうち前提が決まった質問 (フロンティア) から、
+後に続く決定を最も多く抱えるものを 1 問ずつ聞く。「まとめて聞いて」と言えば最大 3 問まで同時に聞く。各質問には 2〜4 個の選択肢とそれぞれのメリット・デメリットを付け、推奨回答は付けない。
+「保留」や矛盾した回答も扱い、話し合っても決まらない問いは「要プロトタイプ」に回す。
+観点リストでの抜けの確認と premortem の後、決定事項・却下した選択肢・変更した決定・未決事項・次の一手を
+チャットに要約する。ファイルの編集はせず、作業を頼まれるまで実装に入らない。
 
 ### `/team-builder` - チーム並列実装
 
